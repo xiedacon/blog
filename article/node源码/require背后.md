@@ -316,8 +316,8 @@ Module._findPath = function(request, paths, isMain) {
     var filename;
 
     var rc = stat(basePath);
-    if (!trailingSlash && rc !== 1) {  // 文件
-      if (rc === 0) {  
+    if (!trailingSlash && rc !== 1) {  // 文件或啥也没有
+      if (rc === 0) {  // 文件
         if (preserveSymlinks && !isMain) {
           filename = path.resolve(basePath);
         } else {
@@ -584,7 +584,7 @@ function makeRequireFunction(mod) {
 ## 总结
 
 当执行 ``const xxx = require('xxx')`` 这段代码时
-  1. 先根据 ``'xxx'`` 和模块路径得出，被 require 的模块可能存在的目录 - [Module._resolveLookupPaths](#Module._resolveLookupPaths)
-  2. 再根据 ``'xxx'`` 和 1 的结果得出，被 require 的模块的文件路径 - [Module._findPath](#Module._findPath)
+  1. 先根据 ``'xxx'`` 和模块所在目录得出被 require 的模块可能存在的目录 - [Module._resolveLookupPaths](#Module._resolveLookupPaths)
+  2. 再根据 ``'xxx'`` 和 1 的结果得出被 require 的模块的文件路径 - [Module._findPath](#Module._findPath)
   3. 然后根据其拓展名确定加载方式 - [Module.prototype.load](#Module.prototype.load)
   4. 最后将 ``module.exports`` 导出
