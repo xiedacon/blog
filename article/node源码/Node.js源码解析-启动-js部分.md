@@ -1,8 +1,8 @@
-# node 启动 - js 部分
+# Node.js源码解析-启动-js部分
 
-> node 版本 8.x
+> Node.js 版本 8.x
 
-node 进程启动时，首先执行 c / c++ 代码，然后 c / c++ 加载并执行 ``lib/internal/bootstrap_node.js`` 并给予一个 ``process`` 参数(运行上下文)
+Node.js 进程启动时，首先执行 c / c++ 代码，然后 c / c++ 加载并执行 ``lib/internal/bootstrap_node.js`` 并给予一个 ``process`` 参数( 运行上下文 )
 
 ```js
 // lib/internal/bootstrap_node.js 概览
@@ -137,11 +137,11 @@ node 进程启动时，首先执行 c / c++ 代码，然后 c / c++ 加载并执
   }
 ```
 
-``startup()`` 最后调用 ``Module.runMain()`` 函数来加载并执行用户代码。在执行 ``startup()`` 函数的过程中，多次用到了 ``NativeModule.require`` 来加载模块
+``startup()`` 最后调用 ``Module.runMain()`` 函数来加载并执行用户代码。在执行 ``startup()`` 函数的过程中，多次用到了 ``NativeModule.require()`` 来加载模块
 
 ## NativeModule
 
-``NativeModule.require`` 是专门用来加载 node 原生模块的
+``NativeModule.require()`` 是专门用来加载 Node.js 内置模块的
 
 ```js
 // lib/internal/bootstrap_node.js
@@ -249,7 +249,7 @@ node 进程启动时，首先执行 c / c++ 代码，然后 c / c++ 加载并执
 
 ## Module.runMain()
 
-node 启动完成后，调用 ``Module.runMain()``，源码如下:
+Node.js 启动完成后，调用 ``Module.runMain()``，源码如下:
 
 ```js
 // bootstrap main module.
@@ -261,4 +261,11 @@ Module.runMain = function() {
 };
 ```
 
-``Module._load()`` 加载并执行用户代码。至此 ``node启动-js部分`` 已经全部完成，后续模块加载部分，见 [require背后](./require背后.md)
+``Module._load()`` 加载并执行用户代码。至此 ``启动-js部分`` 已经全部完成，后续模块加载部分，见 [Node.js源码解析-require背后](./Node.js源码解析-require背后.md)
+
+## End
+
+启动只是 Node.js 源码的一小部分，除此之外还有大量的内置模块和 c / c++ 源码
+
+参考:
+  * [https://github.com/nodejs/node/blob/master/lib/internal/bootstrap_node.js](https://github.com/nodejs/node/blob/master/lib/internal/bootstrap_node.js)

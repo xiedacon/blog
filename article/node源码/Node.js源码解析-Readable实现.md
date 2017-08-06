@@ -1,4 +1,4 @@
-# Readable 实现
+# Node.js源码解析-Readable实现
 
 想要了解 Readable 的实现，最好的方法是顺着 Readable 的 Birth-Death 走一遍
 
@@ -99,7 +99,7 @@ function ReadableState(options, stream) {
 
 在这里将 Readable 的 Birth-Death 分为五个状态:
 
-> 表中为 this._readableSate 的属性
+> 表中为 ``this._readableSate`` 的属性
 
 * start: 初始状态，Readable 刚刚被创建，还未调用 ``readable.read()``
 
@@ -119,7 +119,7 @@ function ReadableState(options, stream) {
   |--|--|--|--|
   |>= highWaterMark|false|false|false|
 
-* ended: 数据已经全部读取完成（``push(null)``），此时 ``push(chunk)`` 会报 ``stream.push() after EOF`` 错误
+* ended: 数据已经全部读取完成（ ``push(null)`` ），此时 ``push(chunk)`` 会报 ``stream.push() after EOF`` 错误
 
   |length|reading|ended|endEmitted|
   |--|--|--|--|
@@ -268,7 +268,7 @@ function howMuchToRead(n, state) {
 }
 ```
 
-调用 ``read()`` 后，如果缓冲池中数据不够或读取后低于 higiWaterMark，则调用 ``_read()`` 来读取更多的数据，否则直接返回读取的数据
+调用 ``read()`` 后，如果缓冲池中数据不够或读取后低于 highWaterMark，则调用 ``_read()`` 来读取更多的数据，否则直接返回读取的数据
 
 当期望数据量大于 highWaterMark 时，重新计算 highWaterMark，大小是大于期望数据量的最小 2^x
 
@@ -333,8 +333,8 @@ function readableAddChunk(stream, chunk, encoding, addToFront, skipChunkCheck) {
           chunk = state.decoder.write(chunk);
           if (state.objectMode || chunk.length !== 0)
             addChunk(stream, state, chunk, false); // 将数据添加到缓冲池中
-          else // 会在 addChunk() 函数内部调用
-            maybeReadMore(stream, state); // 将数据添加到缓冲池中
+          else 
+            maybeReadMore(stream, state); // 会在 addChunk() 函数内部调用
         } else {
           addChunk(stream, state, chunk, false); // 将数据添加到缓冲池中
         }
@@ -344,11 +344,11 @@ function readableAddChunk(stream, chunk, encoding, addToFront, skipChunkCheck) {
     }
   }
 
+  return needMoreData(state);
   // return !state.ended &&  数据源还有数据
   //          (state.needReadable ||  需要更多数据
   //           state.length < state.highWaterMark ||  缓存小于 highWaterMark
   //           state.length === 0)
-  return needMoreData(state);
 }
 
 function addChunk(stream, state, chunk, addToFront) {
@@ -415,7 +415,7 @@ function maybeReadMore_(stream, state) {
 
 如果是同步，``push(chunk)`` 后，因为没有达到 highWaterMark，会继续调用 ``read(0)``，发生第二次 ``_read()``。第二次 ``_read()`` 也可能导致第三次 ``_read()`` ，直到 highWaterMark
 
-待整个调用完毕后，缓冲池内会有 highWaterMark * n（``_read()`` 内调用 ``push(chunk)`` 次数）的数据，而这与 highWaterMark 的设计是不符的
+待整个调用完毕后，缓冲池内会有 highWaterMark * n（ ``_read()`` 内调用 ``push(chunk)`` 次数 ）的数据，而这与 highWaterMark 的设计是不符的
 
 如果是异步，则可以等 ``_read()`` 执行完毕后，在 ``process.nextTick()`` 内再次调用 ``_read()`` 读取数据，不会发生上面的问题
 
@@ -474,9 +474,9 @@ function endReadableNT(state, stream) {
 }
 ```
 
-调用 ``endReadable()`` 时，缓冲池一定为空。整个调用完成后，触发 end 事件，Readable 将不能再读取或写入（``push()`` / ``unshift()``）数据
+调用 ``endReadable()`` 时，缓冲池一定为空。整个调用完成后，触发 end 事件，Readable 将不能再读取或写入（ ``push()`` / ``unshift()`` ）数据
 
-## 总结
+## End
 
 到这里，已经走完了 Readable 的整个 Birth-Death 过程
 
@@ -497,3 +497,6 @@ function endReadableNT(state, stream) {
 ```
 
 根据这个图还有代码，在脑袋里面，把 Readable 的模型运行一遍，就能了解它的实现了
+
+参考：
+  * [https://github.com/nodejs/node/blob/master/lib/_stream_readable.js](https://github.com/nodejs/node/blob/master/lib/_stream_readable.js)

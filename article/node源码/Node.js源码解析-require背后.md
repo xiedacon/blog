@@ -1,8 +1,8 @@
-# require 背后
+# Node.js源码解析-require背后
 
-在编写 node 应用的过程中，我们或多或少的都写过类似 ``const xxx = require('xxx')`` 的代码，其作用是引入模块。不知大家有没有想过，这段代码是如何确定我们要引入的模块？又是以怎样的上下文来执行模块代码的呢？
+在编写 Node.js 应用的过程中，我们或多或少的都写过类似 ``const xxx = require('xxx')`` 的代码，其作用是引入模块。不知大家有没有想过，这段代码是如何确定我们要引入的模块？又是以怎样的上下文来执行模块代码的呢？
 
-让我们来翻开 node 源码，先找到 ``lib/module.js`` 中的 ``Module.prototype.require()`` 函数
+让我们来翻开 Node.js 源码，先找到 ``lib/module.js`` 中的 ``Module.prototype.require()`` 函数
 
 ```js
 // lib/module.js
@@ -57,7 +57,7 @@ Module._load = function(request, parent, isMain) {
 ``Module._load()`` 的执行思路如下:
   * 查找模块: ``Module._resolveFilename()``
   * 存在缓存: 返回 ``cachedModule.exports``
-  * 是原生模块: 见 [NativeModule.require()](./node启动-js部分.md# )
+  * 是内置模块: 见 [NativeModule.require()](./Node.js源码解析-启动-js部分.md#nativemodule)
   * 加载模块: ``tryModuleLoad()``
 
 因此，``Module.prototype.require()`` 的源码可以分为两大块: 查找模块和加载模块
@@ -95,7 +95,7 @@ Module._resolveFilename = function(request, parent, isMain) {
 通过调用 ``Module._resolveLookupPaths()`` 函数可以计算出模块可能存在的目录，在调用时存在三种情况:
   * 直接 ``require('xxx')``: 需要递归查询路径上的 ``node_modules`` 目录和全局 ``node_modules`` 目录
   * 通过 ``Module.runMain()`` 或 ``--eval`` 参数: 返回执行命令行的目录
-  * 使用相对/绝对路径导入: 这时，直接返回父模块目录即可
+  * 使用相对 / 绝对路径导入: 这时，直接返回父模块目录即可
 
 ```js
 // lib/module.js
@@ -145,56 +145,7 @@ Module._resolveLookupPaths = function(request, parent, newReturn) {
     return (newReturn ? mainPaths : [request, mainPaths]);
   }
 
-  // 下面这一段可以无视
-  // 计算出的 id 跟返回值没关系。。
-  // BEGIN
-
-  // Is the parent an index module?
-  // We can assume the parent has a valid extension,
-  // as it already has been accepted as a module.
-  const base = path.basename(parent.filename);
-  var parentIdPath;
-  if (base.length > indexLen) {
-    var i = 0;
-    for (; i < indexLen; ++i) {
-      if (indexChars[i] !== base.charCodeAt(i))
-        break;
-    }
-    if (i === indexLen) {
-      // We matched 'index.', let's validate the rest
-      for (; i < base.length; ++i) {
-        const code = base.charCodeAt(i);
-        if (code !== 95/*_*/ &&
-            (code < 48/*0*/ || code > 57/*9*/) &&
-            (code < 65/*A*/ || code > 90/*Z*/) &&
-            (code < 97/*a*/ || code > 122/*z*/))
-          break;
-      }
-      if (i === base.length) {
-        // Is an index module
-        parentIdPath = parent.id;
-      } else {
-        // Not an index module
-        parentIdPath = path.dirname(parent.id);
-      }
-    } else {
-      // Not an index module
-      parentIdPath = path.dirname(parent.id);
-    }
-  } else {
-    // Not an index module
-    parentIdPath = path.dirname(parent.id);
-  }
-  var id = path.resolve(parentIdPath, request);
-
-  // make sure require('./path') and require('path') get distinct ids, even
-  // when called from the toplevel js file
-  if (parentIdPath === '.' && id.indexOf('/') === -1) {
-    id = './' + id;
-  }
-
-  debug('RELATIVE: requested: %s set ID to: %s from %s', request, id, parent.id);
-  // END
+  // ...
 
   var parentDir = [path.dirname(parent.filename)];
   debug('looking for %j in %j', id, parentDir);
@@ -204,7 +155,7 @@ Module._resolveLookupPaths = function(request, parent, newReturn) {
 
 ### Module._findPath
 
-使用 ``Module._resolveLookupPaths`` 函数找到模块可能存在的目录后，调用 ``Module._findPath()`` 函数，递归查找模块
+使用 ``Module._resolveLookupPaths()`` 函数找到模块可能存在的目录后，调用 ``Module._findPath()`` 函数，递归查找模块
 
 ``Module._findPath()`` 函数在查找模块时，存在以下几种情况:
   * ``require`` 的是文件 ==> ``.js`` / ``.json`` / ``.node``
@@ -250,7 +201,7 @@ Module._findPath = function(request, paths, isMain) {
         } else {
           filename = toRealPath(basePath);
         }
-      } else if (rc === 1) {  // 目录或package
+      } else if (rc === 1) {  // 目录或 package
         if (exts === undefined)
           exts = Object.keys(Module._extensions);
         // 如果是目录，则 filename 为 false
@@ -266,7 +217,7 @@ Module._findPath = function(request, paths, isMain) {
       }
     }
 
-    if (!filename && rc === 1) {  // 目录或package
+    if (!filename && rc === 1) {  // 目录或 package
       if (exts === undefined)
         exts = Object.keys(Module._extensions);
       // 如果是目录，则 filename 为 false
@@ -328,7 +279,7 @@ Module._findPath = function(request, paths, isMain) {
       }
     }
 
-    if(!filename && rc === 1){  // 目录或package
+    if(!filename && rc === 1){  // 目录或 package
       filename = tryPackage(basePath, exts, isMain);
 
       // 如果是目录，则 filename 为 false
@@ -434,7 +385,7 @@ function toRealPath(requestPath) {
 
 通过 ``Module._resolveFilename()`` 函数找到具体的模块文件路径后，就可以开始加载模块了
 
-``Module._load()`` 调用 ``tryModuleLoad()`` 函数来加载模块。``tryModuleLoad()`` 则将 ``module.load()`` 函数（真正加载模块的函数）包裹在一个 try-finally 块中
+``Module._load()`` 调用 ``tryModuleLoad()`` 函数来加载模块。``tryModuleLoad()`` 则将 ``module.load()`` 函数（ 真正加载模块的函数 ）包裹在一个 try-finally 块中
 
 
 ```js
@@ -578,13 +529,17 @@ function makeRequireFunction(mod) {
 ```
 
 各个模块文件中 ``require`` 的区别:
-  * 原生模块（``module.js`` / ``fs.js`` 等）: 对应 ``NativeModule.require`` 函数，仅供 node 内部使用
+  * 内置模块（ ``module.js`` / ``fs.js`` 等 ）: 对应 ``NativeModule.require`` 函数，仅供 node 内部使用
   * 第三方模块: 对应 ``internalModule.makeRequireFunction()`` 函数的执行结果，底层依赖  ``Module.prototype.require()``，遵循 CommonJS 规范
 
 ## 总结
 
 当执行 ``const xxx = require('xxx')`` 这段代码时
-  1. 先根据 ``'xxx'`` 和模块所在目录得出被 require 的模块可能存在的目录 - [Module._resolveLookupPaths](#Module._resolveLookupPaths)
-  2. 再根据 ``'xxx'`` 和 1 的结果得出被 require 的模块的文件路径 - [Module._findPath](#Module._findPath)
-  3. 然后根据其拓展名确定加载方式 - [Module.prototype.load](#Module.prototype.load)
+  1. 先根据 ``'xxx'`` 和模块所在目录得出被 require 的模块可能存在的目录 - [Module._resolveLookupPaths](#module_resolvelookuppaths)
+  2. 再根据 ``'xxx'`` 和 1 的结果得出被 require 的模块的文件路径 - [Module._findPath](#module_findpath)
+  3. 然后根据其拓展名确定加载方式 - [Module.prototype.load](#moduleprototypeload)
   4. 最后将 ``module.exports`` 导出
+
+参考：
+  * [https://github.com/nodejs/node/blob/master/lib/module.js](https://github.com/nodejs/node/blob/master/lib/module.js)
+  * [https://github.com/nodejs/node/blob/master/lib/internal/module.js](https://github.com/nodejs/node/blob/master/lib/internal/module.js)
