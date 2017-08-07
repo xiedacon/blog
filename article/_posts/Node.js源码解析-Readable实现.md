@@ -1,3 +1,8 @@
+---
+title: Node.js源码解析-Readable实现
+date: 2017-07-28
+tags:
+---
 # Node.js源码解析-Readable实现
 
 想要了解 Readable 的实现，最好的方法是顺着 Readable 的 Birth-Death 走一遍

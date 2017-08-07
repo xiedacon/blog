@@ -1,3 +1,8 @@
+---
+title: Node.js源码解析-Writable实现
+date: 2017-08-06
+tags:
+---
 # Node.js源码解析-Writable实现
 
 对于一个 stream 模块来说，最基本的就是读和写。读由 Readable 负责，写则是由 Writable 负责。Readable 的实现上篇文章已经介绍过了，这篇介绍 Writable 的实现

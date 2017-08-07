@@ -1,3 +1,8 @@
+---
+title: Node.js源码解析-require背后
+date: 2017-07-03
+tags:
+---
 # Node.js源码解析-require背后
 
 在编写 Node.js 应用的过程中，我们或多或少的都写过类似 ``const xxx = require('xxx')`` 的代码，其作用是引入模块。不知大家有没有想过，这段代码是如何确定我们要引入的模块？又是以怎样的上下文来执行模块代码的呢？

@@ -1,0 +1,22 @@
+{
+  "name": "blog",
+  "version": "1.0.0",
+  "description": "See [issues](https://github.com/xiedacon/blog/issues).",
+  "dependencies": {
+    "hexo-cli": "^1.0.3"
+  },
+  "scripts": {
+    "build": "./node_modules/hexo-cli/bin/hexo init hexo; cd hexo; npm install; git clone https://github.com/xiedacon/fexo.git themes/fexo",
+    "generate": "./node_modules/hexo-cli/bin/hexo --config ../_config.yml --cwd hexo generate"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xiedacon/blog.git"
+  },
+  "author": "xiedacon",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/xiedacon/blog/issues"
+  },
+  "homepage": "https://github.com/xiedacon/blog#readme"
+}
