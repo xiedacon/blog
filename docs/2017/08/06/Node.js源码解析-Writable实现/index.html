@@ -12,16 +12,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
   
-    <meta name="keywords" content="xiedacon,后端开发,nodejs,JavaScript" />
+    <meta name="keywords" content="Node.js源码解析," />
   
 
   <meta name="description" content="Node.js源码解析-Writable实现对于一个 stream 模块来说，最基本的就是读和写。读由 Readable 负责，写则是由 Writable 负责。Readable 的实现上篇文章已经介绍过了，这篇介绍 Writable 的实现 Base在开始之前，先看看 Writable 的构造函数 1234567891011121314151617181920212223242526272829">
+<meta name="keywords" content="Node.js源码解析">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Node.js源码解析-Writable实现">
 <meta property="og:url" content="http://yoursite.com/2017/08/06/Node.js源码解析-Writable实现/index.html">
 <meta property="og:site_name" content="xiedacon的博客">
 <meta property="og:description" content="Node.js源码解析-Writable实现对于一个 stream 模块来说，最基本的就是读和写。读由 Readable 负责，写则是由 Writable 负责。Readable 的实现上篇文章已经介绍过了，这篇介绍 Writable 的实现 Base在开始之前，先看看 Writable 的构造函数 1234567891011121314151617181920212223242526272829">
-<meta property="og:updated_time" content="2017-08-07T09:32:13.978Z">
+<meta property="og:updated_time" content="2017-08-07T10:20:29.336Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Node.js源码解析-Writable实现">
 <meta name="twitter:description" content="Node.js源码解析-Writable实现对于一个 stream 模块来说，最基本的就是读和写。读由 Readable 负责，写则是由 Writable 负责。Readable 的实现上篇文章已经介绍过了，这篇介绍 Writable 的实现 Base在开始之前，先看看 Writable 的构造函数 1234567891011121314151617181920212223242526272829">
@@ -84,14 +85,14 @@
 
 
   
-    <span id="toolbox-mobile" class="toolbox-mobile">盒子</span>
+    <span id="toolbox-mobile" class="toolbox-mobile">Home</span>
   
 
   <div class="post-header CENTER">
    
   <div class="toolbox">
     <a class="toolbox-entry" href="/">
-      <span class="toolbox-entry-text">盒子</span>
+      <span class="toolbox-entry-text">Home</span>
       <i class="icon-angle-down"></i>
       <i class="icon-home"></i>
     </a>
@@ -111,17 +112,6 @@
         <li class="item-toolbox">
           <a
             class="CIRCLE"
-            href="/category/"
-            rel="noopener noreferrer"
-            target="_self"
-            >
-            分类
-          </a>
-        </li>
-      
-        <li class="item-toolbox">
-          <a
-            class="CIRCLE"
             href="/tag/"
             rel="noopener noreferrer"
             target="_self"
@@ -133,44 +123,11 @@
         <li class="item-toolbox">
           <a
             class="CIRCLE"
-            href="/link/"
-            rel="noopener noreferrer"
-            target="_self"
-            >
-            友链
-          </a>
-        </li>
-      
-        <li class="item-toolbox">
-          <a
-            class="CIRCLE"
             href="/about/"
             rel="noopener noreferrer"
             target="_self"
             >
             关于
-          </a>
-        </li>
-      
-        <li class="item-toolbox">
-          <a
-            class="CIRCLE"
-            href="/atom.xml"
-            rel="noopener noreferrer"
-            target="_blank"
-            >
-            RSS
-          </a>
-        </li>
-      
-        <li class="item-toolbox">
-          <a
-            class="CIRCLE"
-            href="/search/"
-            rel="noopener noreferrer"
-            target="_self"
-            >
-            搜索
           </a>
         </li>
       
@@ -209,6 +166,11 @@
       
 
 
+      
+        <span>
+          <i class="icon-comment"></i>
+          <a href="http://www.xiedacon.com/2017/08/06/Node.js源码解析-Writable实现/#disqus_thread"></a>
+        </span>
       
 
       
@@ -360,17 +322,6 @@
           <li class="item-toolbox">
             <a
               class="CIRCLE"
-              href="/category/"
-              rel="noopener noreferrer"
-              target="_self"
-              >
-              分类
-            </a>
-          </li>
-        
-          <li class="item-toolbox">
-            <a
-              class="CIRCLE"
               href="/tag/"
               rel="noopener noreferrer"
               target="_self"
@@ -382,44 +333,11 @@
           <li class="item-toolbox">
             <a
               class="CIRCLE"
-              href="/link/"
-              rel="noopener noreferrer"
-              target="_self"
-              >
-              友链
-            </a>
-          </li>
-        
-          <li class="item-toolbox">
-            <a
-              class="CIRCLE"
               href="/about/"
               rel="noopener noreferrer"
               target="_self"
               >
               关于
-            </a>
-          </li>
-        
-          <li class="item-toolbox">
-            <a
-              class="CIRCLE"
-              href="/atom.xml"
-              rel="noopener noreferrer"
-              target="_blank"
-              >
-              RSS
-            </a>
-          </li>
-        
-          <li class="item-toolbox">
-            <a
-              class="CIRCLE"
-              href="/search/"
-              rel="noopener noreferrer"
-              target="_self"
-              >
-              搜索
             </a>
           </li>
         

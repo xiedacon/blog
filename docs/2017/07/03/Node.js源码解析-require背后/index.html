@@ -12,16 +12,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
   
-    <meta name="keywords" content="xiedacon,后端开发,nodejs,JavaScript" />
+    <meta name="keywords" content="Node.js源码解析," />
   
 
   <meta name="description" content="Node.js源码解析-require背后在编写 Node.js 应用的过程中，我们或多或少的都写过类似 const xxx = require(&amp;#39;xxx&amp;#39;) 的代码，其作用是引入模块。不知大家有没有想过，这段代码是如何确定我们要引入的模块？又是以怎样的上下文来执行模块代码的呢？ 让我们来翻开 Node.js 源码，先找到 lib/module.js 中的 Module.proto">
+<meta name="keywords" content="Node.js源码解析">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Node.js源码解析-require背后">
 <meta property="og:url" content="http://yoursite.com/2017/07/03/Node.js源码解析-require背后/index.html">
 <meta property="og:site_name" content="xiedacon的博客">
 <meta property="og:description" content="Node.js源码解析-require背后在编写 Node.js 应用的过程中，我们或多或少的都写过类似 const xxx = require(&amp;#39;xxx&amp;#39;) 的代码，其作用是引入模块。不知大家有没有想过，这段代码是如何确定我们要引入的模块？又是以怎样的上下文来执行模块代码的呢？ 让我们来翻开 Node.js 源码，先找到 lib/module.js 中的 Module.proto">
-<meta property="og:updated_time" content="2017-08-07T09:30:41.312Z">
+<meta property="og:updated_time" content="2017-08-07T10:20:25.090Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Node.js源码解析-require背后">
 <meta name="twitter:description" content="Node.js源码解析-require背后在编写 Node.js 应用的过程中，我们或多或少的都写过类似 const xxx = require(&amp;#39;xxx&amp;#39;) 的代码，其作用是引入模块。不知大家有没有想过，这段代码是如何确定我们要引入的模块？又是以怎样的上下文来执行模块代码的呢？ 让我们来翻开 Node.js 源码，先找到 lib/module.js 中的 Module.proto">
@@ -84,14 +85,14 @@
 
 
   
-    <span id="toolbox-mobile" class="toolbox-mobile">盒子</span>
+    <span id="toolbox-mobile" class="toolbox-mobile">Home</span>
   
 
   <div class="post-header CENTER">
    
   <div class="toolbox">
     <a class="toolbox-entry" href="/">
-      <span class="toolbox-entry-text">盒子</span>
+      <span class="toolbox-entry-text">Home</span>
       <i class="icon-angle-down"></i>
       <i class="icon-home"></i>
     </a>
@@ -111,17 +112,6 @@
         <li class="item-toolbox">
           <a
             class="CIRCLE"
-            href="/category/"
-            rel="noopener noreferrer"
-            target="_self"
-            >
-            分类
-          </a>
-        </li>
-      
-        <li class="item-toolbox">
-          <a
-            class="CIRCLE"
             href="/tag/"
             rel="noopener noreferrer"
             target="_self"
@@ -133,44 +123,11 @@
         <li class="item-toolbox">
           <a
             class="CIRCLE"
-            href="/link/"
-            rel="noopener noreferrer"
-            target="_self"
-            >
-            友链
-          </a>
-        </li>
-      
-        <li class="item-toolbox">
-          <a
-            class="CIRCLE"
             href="/about/"
             rel="noopener noreferrer"
             target="_self"
             >
             关于
-          </a>
-        </li>
-      
-        <li class="item-toolbox">
-          <a
-            class="CIRCLE"
-            href="/atom.xml"
-            rel="noopener noreferrer"
-            target="_blank"
-            >
-            RSS
-          </a>
-        </li>
-      
-        <li class="item-toolbox">
-          <a
-            class="CIRCLE"
-            href="/search/"
-            rel="noopener noreferrer"
-            target="_self"
-            >
-            搜索
           </a>
         </li>
       
@@ -209,6 +166,11 @@
       
 
 
+      
+        <span>
+          <i class="icon-comment"></i>
+          <a href="http://www.xiedacon.com/2017/07/03/Node.js源码解析-require背后/#disqus_thread"></a>
+        </span>
       
 
       
@@ -320,10 +282,10 @@
 
    
   <div class="box-prev-next clearfix">
-    <a class="show pull-left" href="/2017/07/03/Node.js源码解析-启动-js部分/">
+    <a class="hide pull-left" href="/">
         <i class="icon icon-angle-left"></i>
     </a>
-    <a class="show pull-right" href="/2017/07/28/Node.js源码解析-Readable实现/">
+    <a class="show pull-right" href="/2017/07/03/Node.js源码解析-启动-js部分/">
         <i class="icon icon-angle-right"></i>
     </a>
   </div>
@@ -365,17 +327,6 @@
           <li class="item-toolbox">
             <a
               class="CIRCLE"
-              href="/category/"
-              rel="noopener noreferrer"
-              target="_self"
-              >
-              分类
-            </a>
-          </li>
-        
-          <li class="item-toolbox">
-            <a
-              class="CIRCLE"
               href="/tag/"
               rel="noopener noreferrer"
               target="_self"
@@ -387,44 +338,11 @@
           <li class="item-toolbox">
             <a
               class="CIRCLE"
-              href="/link/"
-              rel="noopener noreferrer"
-              target="_self"
-              >
-              友链
-            </a>
-          </li>
-        
-          <li class="item-toolbox">
-            <a
-              class="CIRCLE"
               href="/about/"
               rel="noopener noreferrer"
               target="_self"
               >
               关于
-            </a>
-          </li>
-        
-          <li class="item-toolbox">
-            <a
-              class="CIRCLE"
-              href="/atom.xml"
-              rel="noopener noreferrer"
-              target="_blank"
-              >
-              RSS
-            </a>
-          </li>
-        
-          <li class="item-toolbox">
-            <a
-              class="CIRCLE"
-              href="/search/"
-              rel="noopener noreferrer"
-              target="_self"
-              >
-              搜索
             </a>
           </li>
         

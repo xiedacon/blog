@@ -7,7 +7,8 @@
   },
   "scripts": {
     "build": "./node_modules/hexo-cli/bin/hexo init hexo; cd hexo; npm install; git clone https://github.com/xiedacon/fexo.git themes/fexo",
-    "generate": "./node_modules/hexo-cli/bin/hexo --config ../_config.yml --cwd hexo generate"
+    "rebuild":"rm -rf hexo/themes/fexo git clone https://github.com/xiedacon/fexo.git hexo/themes/fexo",
+    "generate": "cp _config_fexo.yml hexo/themes/fexo/_config.yml; ./node_modules/hexo-cli/bin/hexo --config ../_config.yml --cwd hexo generate"
   },
   "repository": {
     "type": "git",
