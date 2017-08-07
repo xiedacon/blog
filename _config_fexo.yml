@@ -109,8 +109,8 @@ init_page_content: HOME_NAV  # HOME_NAV | POST
 # 第三方服务
 # =========================================================
 # Stats
-google_analytics:
-baidu_analytics: 57e94d016e201fba3603a8a2b0263af0
+google_analytics: UA-104151244-1
+baidu_analytics: be63393720f6228b376be11e9672f592
 
 # Comment service
 disqus_shortname: forsigner
