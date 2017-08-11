@@ -10,7 +10,7 @@ avatar: https://avatars0.githubusercontent.com/u/14571125?v=4&s=460
 favicon: https://avatars0.githubusercontent.com/u/14571125?v=4&s=460
 
 # For seo
-keywords: xiedacon,后端开发,nodejs,JavaScript
+keywords: xieda,xiedacon,后端开发,nodejs,Node.js,JavaScript
 
 home_nav:
   - name: Blog
@@ -21,6 +21,9 @@ home_nav:
     target_blank: false #不在新页面打开
   - name: Github
     url: https://github.com/xiedacon
+    target_blank: true #在新页面打开
+  - name: JianShu
+    url: http://www.jianshu.com/u/c241dafeb640
     target_blank: true #在新页面打开
 
 # config page nav
@@ -46,13 +49,13 @@ toolbox:
   isShow: true # true|fase
   text: Home
 
-search_slogan:
-  isShow: false # true|fase
-  text: Can you find the bug of world ~
+# search_slogan:
+#   isShow: false # true|fase
+#   text: Can you find the bug of world ~
 
-link_slogan:
-  isShow: true # true|fase
-  text: 交换友链可以邮件 forsigner@gmail.com
+# link_slogan:
+#   isShow: true # true|fase
+#   text: 交换友链可以邮件 forsigner@gmail.com
 
 
 # set backtop show or hide
@@ -92,7 +95,7 @@ post:
 # =========================================================
 
 # Custom CSS style, 推荐把样式文件放在blog源码文件夹，而不是主题里面
-personal_style: /css/personal-style.css
+# personal_style: /css/personal-style.css
 
 # 这个值取决于你得背景图片是深色还是浅色，深色用dark，浅色用light
 home_background_scheme: light # dark、light
@@ -113,7 +116,7 @@ google_analytics: UA-104151244-1
 baidu_analytics: be63393720f6228b376be11e9672f592
 
 # Comment service
-disqus_shortname: forsigner
+# disqus_shortname: forsigner
 # hypercomments_id: 89821
 # gentie_key: d16a7241e7cd4b389584ed8db2a4e8bc
 
@@ -138,6 +141,16 @@ about:
     text_key: Github
     text_value: "@xiedacon"
     text_value_url: https://github.com/xiedacon
+  - type: Cnode
+    icon: icon-cnode
+    text_key: Cnode
+    text_value: "@xiedacon"
+    text_value_url: https://cnodejs.org/user/xiedacon
+  - type: 简书
+    icon: icon-jianshu
+    text_key: 简书
+    text_value: "@xiedacon"
+    text_value_url: http://www.jianshu.com/u/c241dafeb640
   - type: mail
     icon: icon-mail
     text_key: Email
