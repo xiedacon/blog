@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+
+
+  <html class="light page-post">
+
+
+<head>
+  <meta charset="utf-8">
+  
+  <title>Node.js源码解析-HTTP请求响应过程 | xiedacon的博客</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  
+    <meta name="keywords" content="Node.js源码解析," />
+  
+
+  <meta name="description" content="Node.js源码解析-HTTP请求响应过程在 Node.js 中，起一个 HTTP Server 非常简单，只需要如下代码即可： 12345const http = require(&apos;http&apos;)http.createServer((req, res) =&amp;gt; &amp;#123;  res.end(&apos;Hello World\n&apos;)&amp;#125;).listen(3000) 12$ curl loca">
+<meta name="keywords" content="Node.js源码解析">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Node.js源码解析-HTTP请求响应过程">
+<meta property="og:url" content="http://xiedacon.com/2017/08/18/Node.js源码解析-HTTP请求响应过程/index.html">
+<meta property="og:site_name" content="xiedacon的博客">
+<meta property="og:description" content="Node.js源码解析-HTTP请求响应过程在 Node.js 中，起一个 HTTP Server 非常简单，只需要如下代码即可： 12345const http = require(&apos;http&apos;)http.createServer((req, res) =&amp;gt; &amp;#123;  res.end(&apos;Hello World\n&apos;)&amp;#125;).listen(3000) 12$ curl loca">
+<meta property="og:updated_time" content="2017-08-18T08:42:25.760Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Node.js源码解析-HTTP请求响应过程">
+<meta name="twitter:description" content="Node.js源码解析-HTTP请求响应过程在 Node.js 中，起一个 HTTP Server 非常简单，只需要如下代码即可： 12345const http = require(&apos;http&apos;)http.createServer((req, res) =&amp;gt; &amp;#123;  res.end(&apos;Hello World\n&apos;)&amp;#125;).listen(3000) 12$ curl loca">
+
+  
+
+  
+    <link rel="icon" href="https://avatars0.githubusercontent.com/u/14571125?v=4&s=460">
+  
+
+  <link href="/css/styles.css?v=c114cbe6" rel="stylesheet">
+
+
+  
+
+  
+<!-- Google Analytics -->
+<script type="text/javascript">
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-104151244-1', 'auto');
+ga('send', 'pageview');
+
+</script>
+<!-- End Google Analytics -->
+
+
+  
+  <script type="text/javascript">
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//hm.baidu.com/hm.js?be63393720f6228b376be11e9672f592";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+  
+  <script type="text/javascript">
+	(function(){
+	    var bp = document.createElement('script');
+	    var curProtocol = window.location.protocol.split(':')[0];
+	    if (curProtocol === 'https') {
+	        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';        
+	    }
+	    else {
+	        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+	    }
+	    var s = document.getElementsByTagName("script")[0];
+	    s.parentNode.insertBefore(bp, s);
+	})();
+  </script>
+
+
+
+  
+    <script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+  
+
+  
+    <link rel="stylesheet" href="//cdn.bootcss.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  
+</head>
+
+<body>
+
+
+  
+    <span id="toolbox-mobile" class="toolbox-mobile">Home</span>
+  
+
+  <div class="post-header CENTER">
+   
+  <div class="toolbox">
+    <a class="toolbox-entry" href="/">
+      <span class="toolbox-entry-text">Home</span>
+      <i class="icon-angle-down"></i>
+      <i class="icon-home"></i>
+    </a>
+    <ul class="list-toolbox">
+      
+        <li class="item-toolbox">
+          <a
+            class="CIRCLE"
+            href="/archives/"
+            rel="noopener noreferrer"
+            target="_self"
+            >
+            博客
+          </a>
+        </li>
+      
+        <li class="item-toolbox">
+          <a
+            class="CIRCLE"
+            href="/tag/"
+            rel="noopener noreferrer"
+            target="_self"
+            >
+            标签
+          </a>
+        </li>
+      
+        <li class="item-toolbox">
+          <a
+            class="CIRCLE"
+            href="/about/"
+            rel="noopener noreferrer"
+            target="_self"
+            >
+            关于
+          </a>
+        </li>
+      
+    </ul>
+  </div>
+
+
+</div>
+
+
+  <div id="toc" class="toc-article">
+    <strong class="toc-title">文章目录</strong>
+    <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Node-js源码解析-HTTP请求响应过程"><span class="toc-text">Node.js源码解析-HTTP请求响应过程</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Base"><span class="toc-text">Base</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#http-createServer"><span class="toc-text">http.createServer</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#解析生成-req-和-res"><span class="toc-text">解析生成 req 和 res</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#调用用户函数"><span class="toc-text">调用用户函数</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#res-end"><span class="toc-text">res.end</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#End"><span class="toc-text">End</span></a></li></ol></li></ol>
+  </div>
+
+
+
+<div class="content content-post CENTER">
+   <article id="post-Node.js源码解析-HTTP请求响应过程" class="article article-type-post" itemprop="blogPost">
+  <header class="article-header">
+    <h1 class="post-title">Node.js源码解析-HTTP请求响应过程</h1>
+
+    <div class="article-meta">
+      <span>
+        <i class="icon-calendar"></i>
+        <span>2017.08.18</span>
+      </span>
+
+      
+        <span class="article-author">
+          <i class="icon-user"></i>
+          <span>xiedacon</span>
+        </span>
+      
+
+      
+
+
+      
+
+      
+      <i class="fa fa-eye"></i> 
+        <span id="busuanzi_container_page_pv">
+           &nbsp热度 <span id="busuanzi_value_page_pv">
+           <i class="fa fa-spinner fa-spin"></i></span>℃
+        </span>
+      
+
+      
+      
+    </div>
+  </header>
+
+  <div class="article-content">
+    
+      <h1 id="Node-js源码解析-HTTP请求响应过程"><a href="#Node-js源码解析-HTTP请求响应过程" class="headerlink" title="Node.js源码解析-HTTP请求响应过程"></a>Node.js源码解析-HTTP请求响应过程</h1><p>在 Node.js 中，起一个 HTTP Server 非常简单，只需要如下代码即可：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">const</span> http = <span class="built_in">require</span>(<span class="string">'http'</span>)</div><div class="line"></div><div class="line">http.createServer(<span class="function">(<span class="params">req, res</span>) =&gt;</span> &#123;</div><div class="line">  res.end(<span class="string">'Hello World\n'</span>)</div><div class="line">&#125;).listen(<span class="number">3000</span>)</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">$ curl localhost:3000</div><div class="line">Hello World</div></pre></td></tr></table></figure>
+<p>对，就这么简单。因为 Node.js 已经把具体实现细节给封装起来了，我们只需要调用 http 模块提供的方法即可</p>
+<p>那么，一个请求是如何处理，然后响应的呢？让我们来看看源码</p>
+<h2 id="Base"><a href="#Base" class="headerlink" title="Base"></a>Base</h2><p>首先，让我们理一理思路</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">             _______</div><div class="line">            |       | &lt;== res</div><div class="line">request ==&gt; |   ?   | </div><div class="line">            |_______| ==&gt; req</div><div class="line">               /\</div><div class="line">               ||</div><div class="line">        http.createServer()</div></pre></td></tr></table></figure>
+<ul>
+<li>先调用 <code>http.createServer()</code> 生成一个 <code>http.Server</code> 对象 ( 黑盒 ) 来处理请求</li>
+<li>每次收到请求，都先解析生成 req ( <code>http.IncomingMessage</code> ) 和 res ( <code>http.ServerResponse</code> )，然后交由用户函数处理</li>
+<li>用户函数调用 <code>res.end()</code> 来结束处理，响应请求</li>
+</ul>
+<p>综上，我们的切入点有：</p>
+<ul>
+<li><a href="#http.createServer">http.createServer</a></li>
+<li><a href="#解析生成%20req%20和%20res">解析生成 req 和 res</a></li>
+<li><a href="#调用用户函数">调用用户函数</a></li>
+<li><a href="res.end">res.end</a></li>
+</ul>
+<h2 id="http-createServer"><a href="#http-createServer" class="headerlink" title="http.createServer"></a>http.createServer</h2><p>让我们先来看看 <code>http.createServer()</code></p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div></pre></td><td class="code"><pre><div class="line"><span class="comment">// lib/http.js</span></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">createServer</span>(<span class="params">requestListener</span>) </span>&#123;</div><div class="line">  <span class="keyword">return</span> <span class="keyword">new</span> Server(requestListener);</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="comment">// lib/_http_server.js</span></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">Server</span>(<span class="params">requestListener</span>) </span>&#123;</div><div class="line">  <span class="keyword">if</span> (!(<span class="keyword">this</span> <span class="keyword">instanceof</span> Server)) <span class="keyword">return</span> <span class="keyword">new</span> Server(requestListener);</div><div class="line">  net.Server.call(<span class="keyword">this</span>, &#123; <span class="attr">allowHalfOpen</span>: <span class="literal">true</span> &#125;);</div><div class="line"></div><div class="line">  <span class="keyword">if</span> (requestListener) &#123;</div><div class="line">    <span class="keyword">this</span>.on(<span class="string">'request'</span>, requestListener);</div><div class="line">  &#125;</div><div class="line"></div><div class="line">  <span class="keyword">this</span>.on(<span class="string">'connection'</span>, connectionListener);</div><div class="line"></div><div class="line">  <span class="comment">// ...</span></div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p><code>http.createServer()</code> 函数返回一个 <code>http.Server</code> 实例</p>
+<p>该实例监听了 request 和 connection 两个事件</p>
+<ul>
+<li><code>request 事件</code>：绑定 <code>requestListener()</code> 函数，req 和 res 准备好时触发</li>
+<li><code>connection 事件</code>：绑定 <code>connectionListener()</code> 函数，连接时触发</li>
+</ul>
+<p>用户函数是 <code>requestListener()</code>，因此，我们需要知道 request 事件何时触发</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div></pre></td><td class="code"><pre><div class="line"><span class="comment">// lib/_http_server.js</span></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">connectionListener</span>(<span class="params">socket</span>) </span>&#123;</div><div class="line">  <span class="comment">// ...</span></div><div class="line"></div><div class="line">  <span class="comment">// 从 parsers 中取一个 parser</span></div><div class="line">  <span class="keyword">var</span> parser = parsers.alloc();</div><div class="line">  parser.reinitialize(HTTPParser.REQUEST);</div><div class="line">  parser.socket = socket;</div><div class="line">  socket.parser = parser;</div><div class="line"></div><div class="line">  <span class="comment">// ...</span></div><div class="line"></div><div class="line">  state.onData = socketOnData.bind(<span class="literal">undefined</span>, <span class="keyword">this</span>, socket, parser, state);</div><div class="line"></div><div class="line">  <span class="comment">// ...</span></div><div class="line"></div><div class="line">  socket.on(<span class="string">'data'</span>, state.onData);</div><div class="line"></div><div class="line">  <span class="comment">// ...</span></div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">socketOnData</span>(<span class="params">server, socket, parser, state, d</span>) </span>&#123;</div><div class="line">  <span class="comment">// ...</span></div><div class="line">  <span class="keyword">var</span> ret = parser.execute(d);</div><div class="line">  <span class="comment">// ...</span></div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>当连接建立时，触发 connnection 事件，执行 <code>connectionListener()</code></p>
+<p>这里的 socket 正是连接的 socket 对象，给 socket 绑定 data 事件用来处理数据，处理数据用到的 parser 是从 parsers 中取出来的</p>
+<p>data 事件触发时，执行 <code>socketOnData()</code>，最后调用 <code>parser.execute()</code> 来解析 HTTP 报文</p>
+<p>值得一提的是 parsers 由一个叫做 FreeList ( <a href="https://en.wikipedia.org/wiki/Free_list" target="_blank" rel="external">wiki</a> ) 的数据结构实现，其主要目的是复用 parser</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div></pre></td><td class="code"><pre><div class="line"><span class="comment">// lib/internal/freelist.js</span></div><div class="line"></div><div class="line"><span class="class"><span class="keyword">class</span> <span class="title">FreeList</span> </span>&#123;</div><div class="line">  <span class="keyword">constructor</span>(name, max, ctor) &#123;</div><div class="line">    <span class="keyword">this</span>.name = name;</div><div class="line">    <span class="keyword">this</span>.ctor = ctor;</div><div class="line">    <span class="keyword">this</span>.max = max;</div><div class="line">    <span class="keyword">this</span>.list = [];</div><div class="line">  &#125;</div><div class="line"></div><div class="line">  alloc() &#123;</div><div class="line">    <span class="keyword">return</span> <span class="keyword">this</span>.list.length ? <span class="keyword">this</span>.list.pop() :</div><div class="line">                              <span class="keyword">this</span>.ctor.apply(<span class="keyword">this</span>, <span class="built_in">arguments</span>);</div><div class="line">  &#125;</div><div class="line"></div><div class="line">  free(obj) &#123;</div><div class="line">    <span class="keyword">if</span> (<span class="keyword">this</span>.list.length &lt; <span class="keyword">this</span>.max) &#123;</div><div class="line">      <span class="keyword">this</span>.list.push(obj);</div><div class="line">      <span class="keyword">return</span> <span class="literal">true</span>;</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">return</span> <span class="literal">false</span>;</div><div class="line">  &#125;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="built_in">module</span>.exports = FreeList;</div></pre></td></tr></table></figure>
+<p>通过调用 <code>parsers.alloc()</code> 和 <code>parsers.free(parser)</code> 来获取释放 parser ( http 模块中 max 为 1000 )</p>
+<h2 id="解析生成-req-和-res"><a href="#解析生成-req-和-res" class="headerlink" title="解析生成 req 和 res"></a>解析生成 req 和 res</h2><p>既然，HTTP 报文是由 parser 来解析的，那么，就让我们来看看 parser 是如何创建的吧</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div></pre></td><td class="code"><pre><div class="line"><span class="comment">// lib/_http_common.js</span></div><div class="line"></div><div class="line"><span class="keyword">const</span> binding = process.binding(<span class="string">'http_parser'</span>);</div><div class="line"><span class="keyword">const</span> HTTPParser = binding.HTTPParser;</div><div class="line"></div><div class="line"><span class="comment">// ...</span></div><div class="line"></div><div class="line"><span class="keyword">var</span> parsers = <span class="keyword">new</span> FreeList(<span class="string">'parsers'</span>, <span class="number">1000</span>, <span class="function"><span class="keyword">function</span>(<span class="params"></span>) </span>&#123;</div><div class="line">  <span class="keyword">var</span> parser = <span class="keyword">new</span> HTTPParser(HTTPParser.REQUEST);</div><div class="line"></div><div class="line">  parser._headers = [];</div><div class="line">  parser._url = <span class="string">''</span>;</div><div class="line">  parser._consumed = <span class="literal">false</span>;</div><div class="line"></div><div class="line">  parser.socket = <span class="literal">null</span>;</div><div class="line">  parser.incoming = <span class="literal">null</span>;</div><div class="line">  parser.outgoing = <span class="literal">null</span>;</div><div class="line"></div><div class="line">  parser[kOnHeaders] = parserOnHeaders;</div><div class="line">  parser[kOnHeadersComplete] = parserOnHeadersComplete;</div><div class="line">  parser[kOnBody] = parserOnBody;</div><div class="line">  parser[kOnMessageComplete] = parserOnMessageComplete;</div><div class="line">  parser[kOnExecute] = <span class="literal">null</span>;</div><div class="line"></div><div class="line">  <span class="keyword">return</span> parser;</div><div class="line">&#125;);</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">parserOnHeadersComplete</span>(<span class="params">versionMajor, versionMinor, headers, method, url, statusCode, statusMessage, upgrade, shouldKeepAlive</span>) </span>&#123;</div><div class="line">  <span class="comment">// ...</span></div><div class="line">    </div><div class="line">  <span class="keyword">if</span> (!upgrade) &#123;</div><div class="line">    skipBody = parser.onIncoming(parser.incoming, shouldKeepAlive);</div><div class="line">  &#125;</div><div class="line"></div><div class="line">  <span class="comment">// ...</span></div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="comment">// lib/_http_server.js</span></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">connectionListener</span>(<span class="params">socket</span>) </span>&#123;</div><div class="line">  <span class="comment">// ...</span></div><div class="line">  parser.onIncoming = parserOnIncoming.bind(<span class="literal">undefined</span>, <span class="keyword">this</span>, socket, state);</div><div class="line">  <span class="comment">// ...</span></div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>parser 是由 <code>http_parser</code> 这个库实现。不难看出，这里的 parser 也是基于事件的</p>
+<p>在解析过程中，所经历的事件：</p>
+<ul>
+<li>kOnHeaders：不断解析获取的请求头</li>
+<li>kOnHeadersComplete：请求头解析完毕</li>
+<li>kOnBody：不断解析获取的请求体</li>
+<li>kOnMessageComplete：请求体解析完毕</li>
+<li>kOnExecute：一次解析完毕 ( 无法一次性接收 HTTP 报文的情况 )</li>
+</ul>
+<p>当请求头解析完毕时，对于非 upgrade 请求，可以直接执行 <code>parser.onIncoming()</code>，进行响应</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div></pre></td><td class="code"><pre><div class="line"><span class="comment">// lib/_http_server.js</span></div><div class="line"></div><div class="line"><span class="comment">// 生成 response，并触发 request 事件</span></div><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">parserOnIncoming</span>(<span class="params">server, socket, state, req, keepAlive</span>) </span>&#123;</div><div class="line">  state.incoming.push(req);</div><div class="line"></div><div class="line">  <span class="comment">// ...</span></div><div class="line"></div><div class="line">  <span class="keyword">var</span> res = <span class="keyword">new</span> ServerResponse(req);</div><div class="line">  </div><div class="line">  <span class="comment">// ...</span></div><div class="line"></div><div class="line">  <span class="keyword">if</span> (socket._httpMessage) &#123;</div><div class="line">    state.outgoing.push(res);</div><div class="line">  &#125; <span class="keyword">else</span> &#123;</div><div class="line">    res.assignSocket(socket);</div><div class="line">  &#125;</div><div class="line"></div><div class="line">  <span class="comment">// ...</span></div><div class="line"></div><div class="line">  res.on(<span class="string">'finish'</span>, resOnFinish.bind(<span class="literal">undefined</span>, req, res, socket, state, server));</div><div class="line"></div><div class="line">  <span class="comment">// ...</span></div><div class="line"></div><div class="line">    server.emit(<span class="string">'request'</span>, req, res);</div><div class="line">  </div><div class="line">  <span class="comment">// ...</span></div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">resOnFinish</span>(<span class="params">req, res, socket, state, server</span>) </span>&#123;</div><div class="line">  <span class="comment">// ...</span></div><div class="line"></div><div class="line">  state.incoming.shift();</div><div class="line"></div><div class="line">  <span class="comment">// ...</span></div><div class="line"></div><div class="line">  res.detachSocket(socket);</div><div class="line"></div><div class="line">  <span class="comment">// ...</span></div><div class="line">    <span class="keyword">var</span> m = state.outgoing.shift();</div><div class="line">    <span class="keyword">if</span> (m) &#123;</div><div class="line">      m.assignSocket(socket);</div><div class="line">    &#125;</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>可以看出，在源码中，对每一个 socket，维护了 <code>state.incoming</code> 和 <code>state.outgoing</code> 两个队列，分别用于存储 req 和 res</p>
+<p>当 finish 事件触发时，将 req 和 res 从队列中移除</p>
+<p>执行 <code>parserOnIncoming()</code> 时，最后会触发 request 事件，来调用用户函数</p>
+<h2 id="调用用户函数"><a href="#调用用户函数" class="headerlink" title="调用用户函数"></a>调用用户函数</h2><p>就拿最开始的例子来说：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">const</span> http = <span class="built_in">require</span>(<span class="string">'http'</span>)</div><div class="line"></div><div class="line">http.createServer(<span class="function">(<span class="params">req, res</span>) =&gt;</span> &#123;</div><div class="line">  res.end(<span class="string">'Hello World\n'</span>)</div><div class="line">&#125;).listen(<span class="number">3000</span>)</div></pre></td></tr></table></figure>
+<p>通过调用 <code>res.end(&#39;Hello World\n&#39;)</code> 来告诉 res，处理完成，可以响应并结束请求</p>
+<h2 id="res-end"><a href="#res-end" class="headerlink" title="res.end"></a>res.end</h2><p>ServerResponse 继承自 OutgoingMessage，<code>res.end()</code> 正是 <code>OutgoingMessage.prototype.end()</code></p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div></pre></td><td class="code"><pre><div class="line"><span class="comment">// lib/_http_outgoing.js</span></div><div class="line"></div><div class="line">OutgoingMessage.prototype.end = <span class="function"><span class="keyword">function</span> <span class="title">end</span>(<span class="params">chunk, encoding, callback</span>) </span>&#123;</div><div class="line">  <span class="comment">// ...</span></div><div class="line">  <span class="keyword">if</span> (chunk) &#123;</div><div class="line">    <span class="comment">// ...</span></div><div class="line">    write_(<span class="keyword">this</span>, chunk, encoding, <span class="literal">null</span>, <span class="literal">true</span>);</div><div class="line">  &#125; <span class="keyword">else</span> <span class="keyword">if</span> (!<span class="keyword">this</span>._header) &#123;</div><div class="line">    <span class="keyword">this</span>._contentLength = <span class="number">0</span>;</div><div class="line">    <span class="comment">// 生成响应头</span></div><div class="line">    <span class="keyword">this</span>._implicitHeader();</div><div class="line">  &#125;</div><div class="line"></div><div class="line">  <span class="comment">// ...</span></div><div class="line">  <span class="comment">// 触发 finish 事件</span></div><div class="line">  <span class="keyword">var</span> finish = onFinish.bind(<span class="literal">undefined</span>, <span class="keyword">this</span>);</div><div class="line"></div><div class="line">  <span class="keyword">var</span> ret;</div><div class="line">  <span class="keyword">if</span> (<span class="keyword">this</span>._hasBody &amp;&amp; <span class="keyword">this</span>.chunkedEncoding) &#123;</div><div class="line">    <span class="comment">// trailer 头相关</span></div><div class="line">    ret = <span class="keyword">this</span>._send(<span class="string">'0\r\n'</span> + <span class="keyword">this</span>._trailer + <span class="string">'\r\n'</span>, <span class="string">'latin1'</span>, finish);</div><div class="line">  &#125; <span class="keyword">else</span> &#123;</div><div class="line">    <span class="comment">// 保证一定会触发 finish 事件</span></div><div class="line">    ret = <span class="keyword">this</span>._send(<span class="string">''</span>, <span class="string">'latin1'</span>, finish);</div><div class="line">  &#125;</div><div class="line"></div><div class="line">  <span class="keyword">this</span>.finished = <span class="literal">true</span>;</div><div class="line"></div><div class="line">  <span class="comment">// ...</span></div><div class="line">&#125;;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">write_</span>(<span class="params">msg, chunk, encoding, callback, fromEnd</span>) </span>&#123;</div><div class="line">  <span class="comment">// ...</span></div><div class="line"></div><div class="line">  <span class="keyword">if</span> (!msg._header) &#123;</div><div class="line">    msg._implicitHeader();</div><div class="line">  &#125;</div><div class="line"></div><div class="line">  <span class="comment">// ...</span></div><div class="line"></div><div class="line">  <span class="keyword">var</span> len, ret;</div><div class="line">  <span class="keyword">if</span> (msg.chunkedEncoding) &#123; <span class="comment">// 响应大文件时，分块传输</span></div><div class="line">    <span class="keyword">if</span> (<span class="keyword">typeof</span> chunk === <span class="string">'string'</span>)</div><div class="line">      len = Buffer.byteLength(chunk, encoding);</div><div class="line">    <span class="keyword">else</span></div><div class="line">      len = chunk.length;</div><div class="line"></div><div class="line">    msg._send(len.toString(<span class="number">16</span>), <span class="string">'latin1'</span>, <span class="literal">null</span>);</div><div class="line">    msg._send(crlf_buf, <span class="literal">null</span>, <span class="literal">null</span>);</div><div class="line">    msg._send(chunk, encoding, <span class="literal">null</span>);</div><div class="line">    ret = msg._send(crlf_buf, <span class="literal">null</span>, callback);</div><div class="line">  &#125; <span class="keyword">else</span> &#123;</div><div class="line">    ret = msg._send(chunk, encoding, callback);</div><div class="line">  &#125;</div><div class="line"></div><div class="line">  <span class="comment">// ...</span></div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>执行函数时，如果给了 chunk，就先 <code>write_(chunk)</code>，写入 chunk。再 <code>_send(&#39;&#39;, &#39;latin1&#39;, finish)</code> 绑定 finish 函数。待写入完成后，触发 finish 事件，结束响应</p>
+<p>在写入 chunk 之前，必须确保 headers 已经生成，如果没有则调用 <code>_implicitHeader()</code> 隐式生成 headers</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div></pre></td><td class="code"><pre><div class="line"><span class="comment">// lib/_http_server.js</span></div><div class="line"></div><div class="line">ServerResponse.prototype._implicitHeader = <span class="function"><span class="keyword">function</span> <span class="title">_implicitHeader</span>(<span class="params"></span>) </span>&#123;</div><div class="line">  <span class="keyword">this</span>.writeHead(<span class="keyword">this</span>.statusCode);</div><div class="line">&#125;;</div><div class="line"></div><div class="line">ServerResponse.prototype.writeHead = writeHead;</div><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">writeHead</span>(<span class="params">statusCode, reason, obj</span>) </span>&#123;</div><div class="line">  <span class="comment">// ...</span></div><div class="line">  <span class="comment">// 将 obj 和 this[outHeadersKey] 中的所有 header 放到 headers 中</span></div><div class="line">  <span class="comment">// ...</span></div><div class="line"></div><div class="line">  <span class="keyword">var</span> statusLine = <span class="string">'HTTP/1.1 '</span> + statusCode + <span class="string">' '</span> + <span class="keyword">this</span>.statusMessage + CRLF;</div><div class="line"></div><div class="line">  <span class="keyword">this</span>._storeHeader(statusLine, headers);</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="comment">// lib/_http_outgoing.js</span></div><div class="line"></div><div class="line">OutgoingMessage.prototype._storeHeader = _storeHeader;</div><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">_storeHeader</span>(<span class="params">firstLine, headers</span>) </span>&#123;</div><div class="line">  <span class="comment">// &gt; GET /index.html HTTP/1.1\r\n</span></div><div class="line">  <span class="comment">// &lt; HTTP/1.1 200 OK\r\n</span></div><div class="line"></div><div class="line">  <span class="comment">// ...</span></div><div class="line">  <span class="comment">// 校验 header 并生成 HTTP 报文头</span></div><div class="line">  <span class="comment">// ...</span></div><div class="line"></div><div class="line">  <span class="keyword">this</span>._header = state.header + CRLF;</div><div class="line">  <span class="keyword">this</span>._headerSent = <span class="literal">false</span>;</div><div class="line"></div><div class="line">  <span class="comment">// ...</span></div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>headers 生成后，保存在 <code>this._header</code> 中，此时，响应报文头部已经完成，只需要在响应体之前写入 socket 即可</p>
+<p><code>write_()</code> 函数，内部也是调用 <code>_send()</code> 函数写入数据</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div></pre></td><td class="code"><pre><div class="line"><span class="comment">// lib/_http_outgoing.js</span></div><div class="line"></div><div class="line">OutgoingMessage.prototype._send = <span class="function"><span class="keyword">function</span> <span class="title">_send</span>(<span class="params">data, encoding, callback</span>) </span>&#123;</div><div class="line">  <span class="keyword">if</span> (!<span class="keyword">this</span>._headerSent) &#123; <span class="comment">// 将 headers 添加到 data 前面</span></div><div class="line">    <span class="keyword">if</span> (<span class="keyword">typeof</span> data === <span class="string">'string'</span> &amp;&amp;</div><div class="line">        (encoding === <span class="string">'utf8'</span> || encoding === <span class="string">'latin1'</span> || !encoding)) &#123;</div><div class="line">      data = <span class="keyword">this</span>._header + data;</div><div class="line">    &#125; <span class="keyword">else</span> &#123;</div><div class="line">      <span class="keyword">var</span> header = <span class="keyword">this</span>._header;</div><div class="line">      <span class="keyword">if</span> (<span class="keyword">this</span>.output.length === <span class="number">0</span>) &#123;</div><div class="line">        <span class="keyword">this</span>.output = [header];</div><div class="line">        <span class="keyword">this</span>.outputEncodings = [<span class="string">'latin1'</span>];</div><div class="line">        <span class="keyword">this</span>.outputCallbacks = [<span class="literal">null</span>];</div><div class="line">      &#125; <span class="keyword">else</span> &#123;</div><div class="line">        <span class="keyword">this</span>.output.unshift(header);</div><div class="line">        <span class="keyword">this</span>.outputEncodings.unshift(<span class="string">'latin1'</span>);</div><div class="line">        <span class="keyword">this</span>.outputCallbacks.unshift(<span class="literal">null</span>);</div><div class="line">      &#125;</div><div class="line">      <span class="keyword">this</span>.outputSize += header.length;</div><div class="line">      <span class="keyword">this</span>._onPendingData(header.length);</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">this</span>._headerSent = <span class="literal">true</span>;</div><div class="line">  &#125;</div><div class="line">  <span class="keyword">return</span> <span class="keyword">this</span>._writeRaw(data, encoding, callback);</div><div class="line">&#125;;</div><div class="line"></div><div class="line">OutgoingMessage.prototype._writeRaw = _writeRaw;</div><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">_writeRaw</span>(<span class="params">data, encoding, callback</span>) </span>&#123;</div><div class="line">  <span class="keyword">const</span> conn = <span class="keyword">this</span>.connection;</div><div class="line"></div><div class="line">  <span class="comment">// ...</span></div><div class="line"></div><div class="line">  <span class="keyword">if</span> (conn &amp;&amp; conn._httpMessage === <span class="keyword">this</span> &amp;&amp; conn.writable &amp;&amp; !conn.destroyed) &#123;</div><div class="line">    <span class="keyword">if</span> (<span class="keyword">this</span>.output.length) &#123; <span class="comment">// output 中有缓存，先写入缓存</span></div><div class="line">      <span class="keyword">this</span>._flushOutput(conn);</div><div class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (!data.length) &#123; <span class="comment">// 没有则异步执行回调</span></div><div class="line">      <span class="keyword">if</span> (<span class="keyword">typeof</span> callback === <span class="string">'function'</span>) &#123;</div><div class="line">        nextTick(<span class="keyword">this</span>.socket[async_id_symbol], callback);</div><div class="line">      &#125;</div><div class="line">      <span class="keyword">return</span> <span class="literal">true</span>;</div><div class="line">    &#125;</div><div class="line">    <span class="comment">// 直接写入 socket</span></div><div class="line">    <span class="keyword">return</span> conn.write(data, encoding, callback);</div><div class="line">  &#125;</div><div class="line">  <span class="comment">// 加入 output 缓存</span></div><div class="line">  <span class="keyword">this</span>.output.push(data);</div><div class="line">  <span class="keyword">this</span>.outputEncodings.push(encoding);</div><div class="line">  <span class="keyword">this</span>.outputCallbacks.push(callback);</div><div class="line">  <span class="keyword">this</span>.outputSize += data.length;</div><div class="line">  <span class="keyword">this</span>._onPendingData(data.length);</div><div class="line">  <span class="keyword">return</span> <span class="literal">false</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>对于 <code>res.end()</code> 来说，直接在 <code>nextTick()</code> 中触发 finish 事件，结束响应</p>
+<h2 id="End"><a href="#End" class="headerlink" title="End"></a>End</h2><p>到这里，我们已经走完了一个请求从接收到响应的过程</p>
+<p>除此之外，在 http 模块中，还考虑了许多的实现细节，非常值得一看</p>
+<p>参考：</p>
+<ul>
+<li><a href="https://github.com/nodejs/node/blob/master/lib/http.js" target="_blank" rel="external">https://github.com/nodejs/node/blob/master/lib/http.js</a></li>
+<li><a href="https://github.com/nodejs/node/blob/master/lib/_http_server.js" target="_blank" rel="external">https://github.com/nodejs/node/blob/master/lib/_http_server.js</a></li>
+<li><a href="https://github.com/nodejs/node/blob/master/lib/_http_common.js" target="_blank" rel="external">https://github.com/nodejs/node/blob/master/lib/_http_common.js</a></li>
+<li><a href="https://github.com/nodejs/node/blob/master/lib/internal/freelist.js" target="_blank" rel="external">https://github.com/nodejs/node/blob/master/lib/internal/freelist.js</a></li>
+<li><a href="https://github.com/nodejs/node/blob/master/lib/_http_outgoing.js" target="_blank" rel="external">https://github.com/nodejs/node/blob/master/lib/_http_outgoing.js</a></li>
+</ul>
+
+    
+  </div>
+</article>
+
+
+   
+  <div class="text-center donation">
+    <div class="inner-donation">
+      <span class="btn-donation">支持一下</span>
+      <div class="donation-body">
+        <div class="tip text-center">扫一扫，支持forsigner</div>
+        <ul class="theme.donation.items.length">
+        
+          <li class="item">
+            <img src="/images/qr-wechat.png" alt="">
+          </li>
+        
+          <li class="item">
+            <img src="/images/qr-alipay.png" alt="">
+          </li>
+        
+        </ul>
+      </div>
+    </div>
+  </div>
+
+
+   
+  <div class="box-prev-next clearfix">
+    <a class="show pull-left" href="/2017/08/11/读书笔记-软技能/">
+        <i class="icon icon-angle-left"></i>
+    </a>
+    <a class="hide pull-right" href="/">
+        <i class="icon icon-angle-right"></i>
+    </a>
+  </div>
+
+
+
+
+</div>
+
+
+  <a id="backTop" class="back-top">
+    <i class="icon-angle-up"></i>
+  </a>
+
+
+
+
+  <div class="modal" id="modal">
+  <span id="cover" class="cover hide"></span>
+  <div id="modal-dialog" class="modal-dialog hide-dialog">
+    <div class="modal-header">
+      <span id="close" class="btn-close">关闭</span>
+    </div>
+    <hr>
+    <div class="modal-body">
+      <ul class="list-toolbox">
+        
+          <li class="item-toolbox">
+            <a
+              class="CIRCLE"
+              href="/archives/"
+              rel="noopener noreferrer"
+              target="_self"
+              >
+              博客
+            </a>
+          </li>
+        
+          <li class="item-toolbox">
+            <a
+              class="CIRCLE"
+              href="/tag/"
+              rel="noopener noreferrer"
+              target="_self"
+              >
+              标签
+            </a>
+          </li>
+        
+          <li class="item-toolbox">
+            <a
+              class="CIRCLE"
+              href="/about/"
+              rel="noopener noreferrer"
+              target="_self"
+              >
+              关于
+            </a>
+          </li>
+        
+      </ul>
+
+    </div>
+  </div>
+</div>
+
+
+
+  
+      <div class="fexo-comments comments-post">
+    
+
+    
+
+
+
+
+    
+
+    
+	
+  </div>
+
+  
+
+  <script type="text/javascript">
+  function loadScript(url, callback) {
+    var script = document.createElement('script')
+    script.type = 'text/javascript';
+
+    if (script.readyState) { //IE
+      script.onreadystatechange = function() {
+        if (script.readyState == 'loaded' ||
+          script.readyState == 'complete') {
+          script.onreadystatechange = null;
+          callback();
+        }
+      };
+    } else { //Others
+      script.onload = function() {
+        callback();
+      };
+    }
+
+    script.src = url;
+    document.getElementsByTagName('head')[0].appendChild(script);
+  }
+
+  window.onload = function() {
+    loadScript('/js/bundle.js?235683', function() {
+      // load success
+    });
+  }
+</script>
+
+</body>
+</html>
