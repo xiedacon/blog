@@ -44,10 +44,10 @@ request ==> |   ?   |
   * 用户函数调用 ``res.end()`` 来结束处理，响应请求
 
 综上，我们的切入点有：
-  * [http.createServer](#http.createServer)
-  * [解析生成 req 和 res](#解析生成%20req%20和%20res)
+  * [http.createServer](#httpcreateServer)
+  * [解析生成 req 和 res](#解析生成-req-和-res)
   * [调用用户函数](#调用用户函数)
-  * [res.end](res.end)
+  * [res.end](#resend)
 
 ## http.createServer
 

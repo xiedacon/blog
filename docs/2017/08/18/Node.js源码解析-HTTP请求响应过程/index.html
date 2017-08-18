@@ -22,7 +22,7 @@
 <meta property="og:url" content="http://xiedacon.com/2017/08/18/Node.js源码解析-HTTP请求响应过程/index.html">
 <meta property="og:site_name" content="xiedacon的博客">
 <meta property="og:description" content="Node.js源码解析-HTTP请求响应过程在 Node.js 中，起一个 HTTP Server 非常简单，只需要如下代码即可： 12345const http = require(&apos;http&apos;)http.createServer((req, res) =&amp;gt; &amp;#123;  res.end(&apos;Hello World\n&apos;)&amp;#125;).listen(3000) 12$ curl loca">
-<meta property="og:updated_time" content="2017-08-18T08:42:25.760Z">
+<meta property="og:updated_time" content="2017-08-18T12:52:36.976Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Node.js源码解析-HTTP请求响应过程">
 <meta name="twitter:description" content="Node.js源码解析-HTTP请求响应过程在 Node.js 中，起一个 HTTP Server 非常简单，只需要如下代码即可： 12345const http = require(&apos;http&apos;)http.createServer((req, res) =&amp;gt; &amp;#123;  res.end(&apos;Hello World\n&apos;)&amp;#125;).listen(3000) 12$ curl loca">
@@ -208,10 +208,10 @@ ga('send', 'pageview');
 </ul>
 <p>综上，我们的切入点有：</p>
 <ul>
-<li><a href="#http.createServer">http.createServer</a></li>
-<li><a href="#解析生成%20req%20和%20res">解析生成 req 和 res</a></li>
+<li><a href="#httpcreateServer">http.createServer</a></li>
+<li><a href="#解析生成-req-和-res">解析生成 req 和 res</a></li>
 <li><a href="#调用用户函数">调用用户函数</a></li>
-<li><a href="res.end">res.end</a></li>
+<li><a href="#resend">res.end</a></li>
 </ul>
 <h2 id="http-createServer"><a href="#http-createServer" class="headerlink" title="http.createServer"></a>http.createServer</h2><p>让我们先来看看 <code>http.createServer()</code></p>
 <figure class="highlight js"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div></pre></td><td class="code"><pre><div class="line"><span class="comment">// lib/http.js</span></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">createServer</span>(<span class="params">requestListener</span>) </span>&#123;</div><div class="line">  <span class="keyword">return</span> <span class="keyword">new</span> Server(requestListener);</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="comment">// lib/_http_server.js</span></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">Server</span>(<span class="params">requestListener</span>) </span>&#123;</div><div class="line">  <span class="keyword">if</span> (!(<span class="keyword">this</span> <span class="keyword">instanceof</span> Server)) <span class="keyword">return</span> <span class="keyword">new</span> Server(requestListener);</div><div class="line">  net.Server.call(<span class="keyword">this</span>, &#123; <span class="attr">allowHalfOpen</span>: <span class="literal">true</span> &#125;);</div><div class="line"></div><div class="line">  <span class="keyword">if</span> (requestListener) &#123;</div><div class="line">    <span class="keyword">this</span>.on(<span class="string">'request'</span>, requestListener);</div><div class="line">  &#125;</div><div class="line"></div><div class="line">  <span class="keyword">this</span>.on(<span class="string">'connection'</span>, connectionListener);</div><div class="line"></div><div class="line">  <span class="comment">// ...</span></div><div class="line">&#125;</div></pre></td></tr></table></figure>
