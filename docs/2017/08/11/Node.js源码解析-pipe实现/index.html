@@ -19,7 +19,7 @@
 <meta name="keywords" content="Node.js源码解析">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Node.js源码解析-pipe实现">
-<meta property="og:url" content="http://xiedacon.com/2017/08/11/Node.js源码解析-pipe实现/index.html">
+<meta property="og:url" content="http://www.xiedacon.com/2017/08/11/Node.js源码解析-pipe实现/index.html">
 <meta property="og:site_name" content="xiedacon的博客">
 <meta property="og:description" content="Node.js源码解析-pipe实现从前面两篇文章，我们了解到。想要把 Readable 的数据写到 Writable，就必须先手动的将数据读入内存，然后写入 Writable。换句话说，每次传递数据时，都需要写如下的模板代码 12345readable.on(&apos;readable&apos;, (err) =&amp;gt; &amp;#123;  if(err) throw err  writable.write(rea">
 <meta property="og:updated_time" content="2017-08-11T13:48:13.155Z">

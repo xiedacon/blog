@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+
+
+  <html class="light page-post">
+
+
+<head>
+  <meta charset="utf-8">
+  
+  <title>Node.js源码解析-Buffer的8k池实现 | xiedacon的博客</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  
+    <meta name="keywords" content="Node.js源码解析," />
+  
+
+  <meta name="description" content="Node.js源码解析-Buffer的8k池实现在 Node.js 中，对于大文件一般是以 Buffer 形式存储，相比于字符串，Buffer 可以免去 decode / encode 过程，节省 CPU 成本 说到 Buffer 就不得不提到 Buffer 的 8k 池，那么，下面就让我们来看看 8k 池是如何实现的吧 8k池实现在 Node.js v8.4.0 中，可以通过以下方法来获取一个">
+<meta name="keywords" content="Node.js源码解析">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Node.js源码解析-Buffer的8k池实现">
+<meta property="og:url" content="http://www.xiedacon.com/2017/08/25/Node.js源码解析-Buffer的8k池实现/index.html">
+<meta property="og:site_name" content="xiedacon的博客">
+<meta property="og:description" content="Node.js源码解析-Buffer的8k池实现在 Node.js 中，对于大文件一般是以 Buffer 形式存储，相比于字符串，Buffer 可以免去 decode / encode 过程，节省 CPU 成本 说到 Buffer 就不得不提到 Buffer 的 8k 池，那么，下面就让我们来看看 8k 池是如何实现的吧 8k池实现在 Node.js v8.4.0 中，可以通过以下方法来获取一个">
+<meta property="og:image" content="http://upload-images.jianshu.io/upload_images/2395997-4d09045ce5d5807f.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:updated_time" content="2017-08-25T11:36:31.111Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Node.js源码解析-Buffer的8k池实现">
+<meta name="twitter:description" content="Node.js源码解析-Buffer的8k池实现在 Node.js 中，对于大文件一般是以 Buffer 形式存储，相比于字符串，Buffer 可以免去 decode / encode 过程，节省 CPU 成本 说到 Buffer 就不得不提到 Buffer 的 8k 池，那么，下面就让我们来看看 8k 池是如何实现的吧 8k池实现在 Node.js v8.4.0 中，可以通过以下方法来获取一个">
+<meta name="twitter:image" content="http://upload-images.jianshu.io/upload_images/2395997-4d09045ce5d5807f.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+
+  
+
+  
+    <link rel="icon" href="https://avatars0.githubusercontent.com/u/14571125?v=4&s=460">
+  
+
+  <link href="/css/styles.css?v=c114cbe6" rel="stylesheet">
+
+
+  
+
+  
+<!-- Google Analytics -->
+<script type="text/javascript">
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-104151244-1', 'auto');
+ga('send', 'pageview');
+
+</script>
+<!-- End Google Analytics -->
+
+
+  
+  <script type="text/javascript">
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//hm.baidu.com/hm.js?be63393720f6228b376be11e9672f592";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+  
+  <script type="text/javascript">
+	(function(){
+	    var bp = document.createElement('script');
+	    var curProtocol = window.location.protocol.split(':')[0];
+	    if (curProtocol === 'https') {
+	        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';        
+	    }
+	    else {
+	        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+	    }
+	    var s = document.getElementsByTagName("script")[0];
+	    s.parentNode.insertBefore(bp, s);
+	})();
+  </script>
+
+
+
+  
+    <script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+  
+
+  
+    <link rel="stylesheet" href="//cdn.bootcss.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  
+</head>
+
+<body>
+
+
+  
+    <span id="toolbox-mobile" class="toolbox-mobile">Home</span>
+  
+
+  <div class="post-header CENTER">
+   
+  <div class="toolbox">
+    <a class="toolbox-entry" href="/">
+      <span class="toolbox-entry-text">Home</span>
+      <i class="icon-angle-down"></i>
+      <i class="icon-home"></i>
+    </a>
+    <ul class="list-toolbox">
+      
+        <li class="item-toolbox">
+          <a
+            class="CIRCLE"
+            href="/archives/"
+            rel="noopener noreferrer"
+            target="_self"
+            >
+            博客
+          </a>
+        </li>
+      
+        <li class="item-toolbox">
+          <a
+            class="CIRCLE"
+            href="/tag/"
+            rel="noopener noreferrer"
+            target="_self"
+            >
+            标签
+          </a>
+        </li>
+      
+        <li class="item-toolbox">
+          <a
+            class="CIRCLE"
+            href="/about/"
+            rel="noopener noreferrer"
+            target="_self"
+            >
+            关于
+          </a>
+        </li>
+      
+    </ul>
+  </div>
+
+
+</div>
+
+
+  <div id="toc" class="toc-article">
+    <strong class="toc-title">文章目录</strong>
+    <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Node-js源码解析-Buffer的8k池实现"><span class="toc-text">Node.js源码解析-Buffer的8k池实现</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#8k池实现"><span class="toc-text">8k池实现</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Why-Unsafe"><span class="toc-text">Why Unsafe ?</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#End"><span class="toc-text">End</span></a></li></ol></li></ol>
+  </div>
+
+
+
+<div class="content content-post CENTER">
+   <article id="post-Node.js源码解析-Buffer的8k池实现" class="article article-type-post" itemprop="blogPost">
+  <header class="article-header">
+    <h1 class="post-title">Node.js源码解析-Buffer的8k池实现</h1>
+
+    <div class="article-meta">
+      <span>
+        <i class="icon-calendar"></i>
+        <span>2017.08.25</span>
+      </span>
+
+      
+        <span class="article-author">
+          <i class="icon-user"></i>
+          <span>xiedacon</span>
+        </span>
+      
+
+      
+
+
+      
+
+      
+      <i class="fa fa-eye"></i> 
+        <span id="busuanzi_container_page_pv">
+           &nbsp热度 <span id="busuanzi_value_page_pv">
+           <i class="fa fa-spinner fa-spin"></i></span>℃
+        </span>
+      
+
+      
+      
+    </div>
+  </header>
+
+  <div class="article-content">
+    
+      <h1 id="Node-js源码解析-Buffer的8k池实现"><a href="#Node-js源码解析-Buffer的8k池实现" class="headerlink" title="Node.js源码解析-Buffer的8k池实现"></a>Node.js源码解析-Buffer的8k池实现</h1><p>在 Node.js 中，对于大文件一般是以 Buffer 形式存储，相比于字符串，Buffer 可以免去 <code>decode</code> / <code>encode</code> 过程，节省 CPU 成本</p>
+<p>说到 Buffer 就不得不提到 Buffer 的 8k 池，那么，下面就让我们来看看 8k 池是如何实现的吧</p>
+<h2 id="8k池实现"><a href="#8k池实现" class="headerlink" title="8k池实现"></a>8k池实现</h2><p>在 <code>Node.js v8.4.0</code> 中，可以通过以下方法来获取一个 Buffer 实例：</p>
+<ul>
+<li><code>new Buffer()</code> ( 不推荐 )</li>
+<li><code>Buffer.from()</code></li>
+<li><code>Buffer.alloc()</code></li>
+<li><code>Buffer.allocUnsafe()</code></li>
+<li><code>Buffer.allocUnsafeSlow()</code></li>
+</ul>
+<p>从命名上来看，<code>Buffer.allocUnsafe()</code> 和 <code>Buffer.allocUnsafeSlow()</code> 都是不安全的，有泄漏内存中敏感信息的危险</p>
+<p>unsafe 的问题放到后面说，先看看如何获取一个 Buffer 实例</p>
+<p><img src="http://upload-images.jianshu.io/upload_images/2395997-4d09045ce5d5807f.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt="创建 Buffer"></p>
+<p>从图中可以看出，只有 <code>allocate()</code> 和 <code>fromString()</code> 两个函数直接与8k池相关</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div></pre></td><td class="code"><pre><div class="line"><span class="comment">// lib/buffer.js</span></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">allocate</span>(<span class="params">size</span>) </span>&#123;</div><div class="line">  <span class="keyword">if</span> (size &lt;= <span class="number">0</span>) &#123;</div><div class="line">    <span class="keyword">return</span> <span class="keyword">new</span> FastBuffer();</div><div class="line">  &#125;</div><div class="line">  <span class="keyword">if</span> (size &lt; (Buffer.poolSize &gt;&gt;&gt; <span class="number">1</span>)) &#123; <span class="comment">// &lt; 4k</span></div><div class="line">    <span class="keyword">if</span> (size &gt; (poolSize - poolOffset)) <span class="comment">// 大于剩余容量</span></div><div class="line">      createPool();</div><div class="line">    <span class="keyword">var</span> b = <span class="keyword">new</span> FastBuffer(allocPool, poolOffset, size);</div><div class="line">    poolOffset += size;</div><div class="line">    alignPool();</div><div class="line">    <span class="keyword">return</span> b;</div><div class="line">  &#125; <span class="keyword">else</span> &#123; <span class="comment">// &gt; 4k</span></div><div class="line">    <span class="keyword">return</span> createUnsafeBuffer(size);</div><div class="line">  &#125;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">fromString</span>(<span class="params">string, encoding</span>) </span>&#123;</div><div class="line">  <span class="comment">// ...</span></div><div class="line">  <span class="keyword">if</span> (length &gt;= (Buffer.poolSize &gt;&gt;&gt; <span class="number">1</span>)) <span class="comment">// &gt; 4k</span></div><div class="line">    <span class="keyword">return</span> binding.createFromString(string, encoding);</div><div class="line"></div><div class="line">  <span class="keyword">if</span> (length &gt; (poolSize - poolOffset)) <span class="comment">// 大于剩余容量</span></div><div class="line">    createPool();</div><div class="line">  <span class="keyword">var</span> b = <span class="keyword">new</span> FastBuffer(allocPool, poolOffset, length);</div><div class="line">  <span class="keyword">const</span> actual = b.write(string, encoding);</div><div class="line">  <span class="keyword">if</span> (actual !== length) &#123; <span class="comment">// byteLength() 可能会估计错误，尽管可能性很小</span></div><div class="line">    b = <span class="keyword">new</span> FastBuffer(allocPool, poolOffset, actual);</div><div class="line">  &#125;</div><div class="line">  poolOffset += actual;</div><div class="line">  alignPool();</div><div class="line">  <span class="keyword">return</span> b;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p><code>allocate()</code> 和 <code>fromString()</code> 都是分为大于 4k 和小于 4k 两种情况来处理</p>
+<p>小于 4k 时，先检查8k池的剩余容量，如果大于剩余容量则直接创建一个新的8k池，然后修正 poolOffset，最后调用 <code>alignPool()</code></p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div></pre></td><td class="code"><pre><div class="line"><span class="comment">// lib/buffer.js</span></div><div class="line"></div><div class="line">Buffer.poolSize = <span class="number">8</span> * <span class="number">1024</span>;</div><div class="line"><span class="keyword">var</span> poolSize, poolOffset, allocPool;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">createUnsafeArrayBuffer</span>(<span class="params">size</span>) </span>&#123;</div><div class="line">  <span class="comment">// ...</span></div><div class="line">  <span class="keyword">return</span> <span class="keyword">new</span> <span class="built_in">ArrayBuffer</span>(size);</div><div class="line">  <span class="comment">// ...</span></div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">createPool</span>(<span class="params"></span>) </span>&#123;</div><div class="line">  poolSize = Buffer.poolSize; <span class="comment">// 8k</span></div><div class="line">  allocPool = createUnsafeArrayBuffer(poolSize);</div><div class="line">  poolOffset = <span class="number">0</span>;</div><div class="line">&#125;</div><div class="line">createPool();</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">alignPool</span>(<span class="params"></span>) </span>&#123;</div><div class="line">  <span class="keyword">if</span> (poolOffset &amp; <span class="number">0x7</span>) &#123; <span class="comment">// 进行校准，只能为 8 的倍数</span></div><div class="line">    poolOffset |= <span class="number">0x7</span>; <span class="comment">// xxx111</span></div><div class="line">    poolOffset++; <span class="comment">// xx(x+1)000</span></div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>通过调用 <code>alignPool()</code> 来校准 poolOffset，poolOffset 只能为 8 的倍数，换句话说，每次至少使用 8 个字节内存</p>
+<p>8k池容量不够时，调用 <code>createPool()</code>，创建一个新的8k池</p>
+<p><code>createPool()</code> 内部调用 <code>createUnsafeArrayBuffer()</code> 来获取一个对应大小的 ArrayBuffer 实例</p>
+<p>关于 ArrayBuffer，这里引用 MDN 的介绍：</p>
+<blockquote>
+<p>The ArrayBuffer object is used to represent a generic, fixed-length raw binary data buffer</p>
+</blockquote>
+<p>因为 ArrayBuffer 是 <code>raw binary data</code>，所以它是不安全的，存在泄漏内存中敏感信息的危险</p>
+<h3 id="Why-Unsafe"><a href="#Why-Unsafe" class="headerlink" title="Why Unsafe ?"></a>Why Unsafe ?</h3><p>从图中我们知道，一共有 4 种方法来获得一个 Buffer 实例，它们之中，有的是 unsafe 的，有的不是</p>
+<blockquote>
+<p><code>new Buffer()</code> 依赖 <code>Buffer.from()</code> 和 <code>Buffer.alloc()</code> 不算一种</p>
+</blockquote>
+<p>下面让我们来看看为什么有的是 unsafe 的</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div></pre></td><td class="code"><pre><div class="line"><span class="comment">// lib/buffer.js</span></div><div class="line"></div><div class="line"><span class="comment">// safe</span></div><div class="line">Buffer.from = <span class="function"><span class="keyword">function</span>(<span class="params">value, encodingOrOffset, length</span>) </span>&#123;</div><div class="line">  <span class="keyword">if</span> (<span class="keyword">typeof</span> value === <span class="string">'string'</span>)</div><div class="line">    <span class="keyword">return</span> fromString(value, encodingOrOffset); <span class="comment">// safe</span></div><div class="line"></div><div class="line">  <span class="keyword">if</span> (isAnyArrayBuffer(value))</div><div class="line">    <span class="keyword">return</span> fromArrayBuffer(value, encodingOrOffset, length); <span class="comment">// safe</span></div><div class="line"></div><div class="line">  <span class="keyword">var</span> b = fromObject(value); <span class="comment">// safe</span></div><div class="line">  <span class="comment">// ...</span></div><div class="line">&#125;;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">fromString</span>(<span class="params">string, encoding</span>) </span>&#123;</div><div class="line">  <span class="comment">// ...</span></div><div class="line">  <span class="keyword">var</span> b = <span class="keyword">new</span> FastBuffer(allocPool, poolOffset, length);</div><div class="line">  <span class="keyword">const</span> actual = b.write(string, encoding);</div><div class="line">  <span class="comment">// ...</span></div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">fromArrayBuffer</span>(<span class="params">obj, byteOffset, length</span>) </span>&#123;</div><div class="line">  <span class="comment">// ...</span></div><div class="line">  <span class="keyword">return</span> <span class="keyword">new</span> FastBuffer(obj, byteOffset, length);</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">fromObject</span>(<span class="params">obj</span>) </span>&#123;</div><div class="line">  <span class="keyword">if</span> (isUint8Array(obj)) &#123;</div><div class="line">    <span class="keyword">const</span> b = allocate(obj.length);</div><div class="line">    <span class="comment">// ...</span></div><div class="line">    binding.copy(obj, b, <span class="number">0</span>, <span class="number">0</span>, obj.length);</div><div class="line">  &#125;</div><div class="line"></div><div class="line">  <span class="keyword">if</span> (obj != <span class="literal">null</span>) &#123;</div><div class="line">    <span class="comment">// ...</span></div><div class="line">      <span class="keyword">return</span> fromArrayLike(obj);</div><div class="line">    <span class="comment">// ...</span></div><div class="line">  &#125;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">fromArrayLike</span>(<span class="params">obj</span>) </span>&#123;</div><div class="line">  <span class="comment">// ...</span></div><div class="line">  <span class="keyword">const</span> b = allocate(length);</div><div class="line">  <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; length; i++)</div><div class="line">    b[i] = obj[i];</div><div class="line">  <span class="keyword">return</span> b;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="comment">// unsafe</span></div><div class="line">Buffer.allocUnsafe = <span class="function"><span class="keyword">function</span>(<span class="params">size</span>) </span>&#123;</div><div class="line">  <span class="keyword">return</span> allocate(size);</div><div class="line">&#125;;</div><div class="line"></div><div class="line"><span class="comment">// unsafe</span></div><div class="line">Buffer.allocUnsafeSlow = <span class="function"><span class="keyword">function</span>(<span class="params">size</span>) </span>&#123;</div><div class="line">  <span class="keyword">return</span> createUnsafeBuffer(size);</div><div class="line">&#125;;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">createUnsafeBuffer</span>(<span class="params">size</span>) </span>&#123;</div><div class="line">  <span class="keyword">return</span> <span class="keyword">new</span> FastBuffer(createUnsafeArrayBuffer(size));</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="comment">// safe</span></div><div class="line">Buffer.alloc = <span class="function"><span class="keyword">function</span>(<span class="params">size, fill, encoding</span>) </span>&#123;</div><div class="line">  assertSize(size);</div><div class="line">  <span class="keyword">if</span> (size &gt; <span class="number">0</span> &amp;&amp; fill !== <span class="literal">undefined</span>) &#123;</div><div class="line">    <span class="comment">// ...</span></div><div class="line">    <span class="keyword">return</span> createUnsafeBuffer(size).fill(fill, encoding); </div><div class="line">  &#125;</div><div class="line">  <span class="keyword">return</span> <span class="keyword">new</span> FastBuffer(size);</div><div class="line">&#125;;</div></pre></td></tr></table></figure>
+<p>可以看出:</p>
+<ul>
+<li><code>Buffer.from()</code> 和 <code>Buffer.alloc()</code>: 取到原始 buffer 后，对原始数据进行了替换，所以它们是 safe 的</li>
+<li><code>Buffer.allocUnsafe()</code> 和 <code>Buffer.allocUnsafeSlow()</code>: 直接使用原始 buffer，所以它们是 unsafe 的</li>
+</ul>
+<h2 id="End"><a href="#End" class="headerlink" title="End"></a>End</h2><ul>
+<li><code>new Buffer()</code>: 依赖 <code>Buffer.from()</code> 和 <code>Buffer.alloc()</code></li>
+<li><code>Buffer.from()</code><ul>
+<li>ArrayBuffer: 直接使用 ArrayBuffer 创建 FastBuffer</li>
+<li>String: 小于 4k 使用8k池，大于 4k 调用 <code>binding.createFromString()</code></li>
+<li>Object: 小于 4k 使用8k池，大于 4k 调用 <code>createUnsafeBuffer()</code></li>
+</ul>
+</li>
+<li><code>Buffer.alloc()</code>: 需要 fill buffer，用给定字符填充，否则用 0 填充</li>
+<li><code>Buffer.allocUnsafe()</code>: 小于 4k 使用8k池，大于 4k 调用 <code>createUnsafeBuffer()</code></li>
+<li><code>Buffer.allocUnsafeSlow()</code>: 调用 <code>createUnsafeBuffer()</code></li>
+</ul>
+<p>参考：</p>
+<ul>
+<li><a href="https://github.com/nodejs/node/blob/master/lib/buffer.js" target="_blank" rel="external">https://github.com/nodejs/node/blob/master/lib/buffer.js</a></li>
+</ul>
+
+    
+  </div>
+</article>
+
+
+   
+  <div class="text-center donation">
+    <div class="inner-donation">
+      <span class="btn-donation">支持一下</span>
+      <div class="donation-body">
+        <div class="tip text-center">扫一扫，支持forsigner</div>
+        <ul class="theme.donation.items.length">
+        
+          <li class="item">
+            <img src="/images/qr-wechat.png" alt="">
+          </li>
+        
+          <li class="item">
+            <img src="/images/qr-alipay.png" alt="">
+          </li>
+        
+        </ul>
+      </div>
+    </div>
+  </div>
+
+
+   
+  <div class="box-prev-next clearfix">
+    <a class="show pull-left" href="/2017/08/18/Node.js源码解析-HTTP请求响应过程/">
+        <i class="icon icon-angle-left"></i>
+    </a>
+    <a class="hide pull-right" href="/">
+        <i class="icon icon-angle-right"></i>
+    </a>
+  </div>
+
+
+
+
+</div>
+
+
+  <a id="backTop" class="back-top">
+    <i class="icon-angle-up"></i>
+  </a>
+
+
+
+
+  <div class="modal" id="modal">
+  <span id="cover" class="cover hide"></span>
+  <div id="modal-dialog" class="modal-dialog hide-dialog">
+    <div class="modal-header">
+      <span id="close" class="btn-close">关闭</span>
+    </div>
+    <hr>
+    <div class="modal-body">
+      <ul class="list-toolbox">
+        
+          <li class="item-toolbox">
+            <a
+              class="CIRCLE"
+              href="/archives/"
+              rel="noopener noreferrer"
+              target="_self"
+              >
+              博客
+            </a>
+          </li>
+        
+          <li class="item-toolbox">
+            <a
+              class="CIRCLE"
+              href="/tag/"
+              rel="noopener noreferrer"
+              target="_self"
+              >
+              标签
+            </a>
+          </li>
+        
+          <li class="item-toolbox">
+            <a
+              class="CIRCLE"
+              href="/about/"
+              rel="noopener noreferrer"
+              target="_self"
+              >
+              关于
+            </a>
+          </li>
+        
+      </ul>
+
+    </div>
+  </div>
+</div>
+
+
+
+  
+      <div class="fexo-comments comments-post">
+    
+
+    
+
+
+
+
+    
+
+    
+	
+  </div>
+
+  
+
+  <script type="text/javascript">
+  function loadScript(url, callback) {
+    var script = document.createElement('script')
+    script.type = 'text/javascript';
+
+    if (script.readyState) { //IE
+      script.onreadystatechange = function() {
+        if (script.readyState == 'loaded' ||
+          script.readyState == 'complete') {
+          script.onreadystatechange = null;
+          callback();
+        }
+      };
+    } else { //Others
+      script.onload = function() {
+        callback();
+      };
+    }
+
+    script.src = url;
+    document.getElementsByTagName('head')[0].appendChild(script);
+  }
+
+  window.onload = function() {
+    loadScript('/js/bundle.js?235683', function() {
+      // load success
+    });
+  }
+</script>
+
+</body>
+</html>
