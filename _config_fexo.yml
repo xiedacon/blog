@@ -22,9 +22,9 @@ home_nav:
   - name: Github
     url: https://github.com/xiedacon
     target_blank: true #在新页面打开
-  - name: JianShu
-    url: http://www.jianshu.com/u/c241dafeb640
-    target_blank: true #在新页面打开
+  - name: About
+    url: /about
+    target_blank: false
 
 # config page nav
 page_nav:
@@ -136,6 +136,11 @@ about:
     - "1995/3/18"
     - "Talk is cheep, show me the code"
     - "Noder"
+  - type: resume
+    icon: icon-resume
+    text_key: 简历
+    text_value: "@xiedacon"
+    text_value_url: https://xiedacon.github.io/resume/
   - type: Github
     icon: icon-github
     text_key: Github
@@ -151,6 +156,11 @@ about:
     text_key: 简书
     text_value: "@xiedacon"
     text_value_url: http://www.jianshu.com/u/c241dafeb640
+  - type: Segmentfault
+    icon: icon-segmentfault
+    text_key: Segmentfault
+    text_value: "@xiedacon"
+    text_value_url: https://segmentfault.com/u/xiedacon
   - type: mail
     icon: icon-mail
     text_key: Email
@@ -177,3 +187,11 @@ project:
     name: music
     url: https://github.com/xiedacon/music
     intro: A music website build with java
+  - type: personal
+    name: generate
+    url: https://github.com/xiedacon/generate
+    intro: Generate your repositories
+  - type: personal
+    name: small-server
+    url: https://github.com/xiedacon/small-server
+    intro: 一个简单的静态资源服务器实现，可以使用在任何目录
