@@ -66,3 +66,5 @@ typings/
 # hexo
 
 hexo/
+
+package-lock.json

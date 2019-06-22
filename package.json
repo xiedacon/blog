@@ -6,8 +6,8 @@
     "hexo-cli": "^1.0.3"
   },
   "scripts": {
-    "build": "./node_modules/hexo-cli/bin/hexo init hexo; cd hexo; npm install; git clone https://github.com/xiedacon/fexo.git themes/fexo",
-    "rebuild":"rm -rf hexo/themes/fexo git clone https://github.com/xiedacon/fexo.git hexo/themes/fexo",
+    "build": "./node_modules/hexo-cli/bin/hexo init hexo; cd hexo; npm install; git clone https://github.com/xiedacon/fexo.git --depth=1 themes/fexo",
+    "rebuild": "rm -rf hexo/themes/fexo; git clone https://github.com/xiedacon/fexo.git --depth=1 hexo/themes/fexo",
     "generate": "cp _config_fexo.yml hexo/themes/fexo/_config.yml; ./node_modules/hexo-cli/bin/hexo --config ../_config.yml --cwd hexo generate"
   },
   "repository": {
