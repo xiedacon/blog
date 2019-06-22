@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+
+
+  <html class="light page-post">
+
+
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="utf-8">
+  
+  <title>node-zookeeper-client 运行机制 | xiedacon的博客</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  
+    <meta name="keywords" content="zookeeper,">
+  
+
+  <meta name="description" content="ZooKeeper ( 简称 zk ) 是一个开源的分布式协调服务，其常用做分布式服务的注册中心 本文要讲的是 Node.js 的 zk sdk – node-zookeeper-client 在这之前，先了解一下 zk 相关的基本知识  sessionId：客户端连接 session，默认 30s 后过期 xid：客户端发送消息序号，zk 服务端进行响应时，xid 相同 zxid：ZooKeep">
+<meta name="keywords" content="zookeeper">
+<meta property="og:type" content="article">
+<meta property="og:title" content="node-zookeeper-client 运行机制">
+<meta property="og:url" content="http://www.xiedacon.com/2019/06/22/node-zookeeper-client 运行机制/index.html">
+<meta property="og:site_name" content="xiedacon的博客">
+<meta property="og:description" content="ZooKeeper ( 简称 zk ) 是一个开源的分布式协调服务，其常用做分布式服务的注册中心 本文要讲的是 Node.js 的 zk sdk – node-zookeeper-client 在这之前，先了解一下 zk 相关的基本知识  sessionId：客户端连接 session，默认 30s 后过期 xid：客户端发送消息序号，zk 服务端进行响应时，xid 相同 zxid：ZooKeep">
+<meta property="og:locale" content="default">
+<meta property="og:image" content="http://www.xiedacon.com/images/node-zookeeper-client%20%E8%BF%90%E8%A1%8C%E6%9C%BA%E5%88%B6/1.png">
+<meta property="og:image" content="http://www.xiedacon.com/images/node-zookeeper-client%20%E8%BF%90%E8%A1%8C%E6%9C%BA%E5%88%B6/2.png">
+<meta property="og:image" content="http://www.xiedacon.com/images/node-zookeeper-client%20%E8%BF%90%E8%A1%8C%E6%9C%BA%E5%88%B6/3.png">
+<meta property="og:updated_time" content="2019-06-22T15:38:51.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="node-zookeeper-client 运行机制">
+<meta name="twitter:description" content="ZooKeeper ( 简称 zk ) 是一个开源的分布式协调服务，其常用做分布式服务的注册中心 本文要讲的是 Node.js 的 zk sdk – node-zookeeper-client 在这之前，先了解一下 zk 相关的基本知识  sessionId：客户端连接 session，默认 30s 后过期 xid：客户端发送消息序号，zk 服务端进行响应时，xid 相同 zxid：ZooKeep">
+<meta name="twitter:image" content="http://www.xiedacon.com/images/node-zookeeper-client%20%E8%BF%90%E8%A1%8C%E6%9C%BA%E5%88%B6/1.png">
+
+  
+
+  
+    <link rel="icon" href="https://avatars0.githubusercontent.com/u/14571125?v=4&s=460">
+  
+
+  <link href="/css/styles.css?v=c114cbeddx" rel="stylesheet">
+
+
+  
+
+  
+<!-- Google Analytics -->
+<script type="text/javascript">
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+ga('create', 'UA-104151244-1', 'auto');
+ga('send', 'pageview');
+
+</script>
+<!-- End Google Analytics -->
+
+
+  
+  <script type="text/javascript">
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//hm.baidu.com/hm.js?be63393720f6228b376be11e9672f592";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+  
+  <script type="text/javascript">
+	(function(){
+	    var bp = document.createElement('script');
+	    var curProtocol = window.location.protocol.split(':')[0];
+	    if (curProtocol === 'https') {
+	        bp.src = 'https://zz.bdstatic.com/linksubmit/push.js';        
+	    }
+	    else {
+	        bp.src = 'http://push.zhanzhang.baidu.com/push.js';
+	    }
+	    var s = document.getElementsByTagName("script")[0];
+	    s.parentNode.insertBefore(bp, s);
+	})();
+  </script>
+
+
+
+  
+    <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <link rel="stylesheet" href="//cdn.bootcss.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  
+
+</head>
+</html>
+<body>
+
+
+  
+    <span id="toolbox-mobile" class="toolbox-mobile">Home</span>
+  
+
+  <div class="post-header CENTER">
+   
+  <div class="toolbox">
+    <a class="toolbox-entry" href="/">
+      <span class="toolbox-entry-text">Home</span>
+      <i class="icon-angle-down"></i>
+      <i class="icon-home"></i>
+    </a>
+    <ul class="list-toolbox">
+      
+        <li class="item-toolbox">
+          <a
+            class="CIRCLE"
+            href="/archives/"
+            rel="noopener noreferrer"
+            target="_self"
+            >
+            博客
+          </a>
+        </li>
+      
+        <li class="item-toolbox">
+          <a
+            class="CIRCLE"
+            href="/tag/"
+            rel="noopener noreferrer"
+            target="_self"
+            >
+            标签
+          </a>
+        </li>
+      
+        <li class="item-toolbox">
+          <a
+            class="CIRCLE"
+            href="/about/"
+            rel="noopener noreferrer"
+            target="_self"
+            >
+            关于
+          </a>
+        </li>
+      
+    </ul>
+  </div>
+
+
+</div>
+
+
+  <div id="toc" class="toc-article">
+    <strong class="toc-title">文章目录</strong>
+    <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#使用示例"><span class="toc-text">使用示例</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-创建-zk-客户端"><span class="toc-text">1. 创建 zk 客户端</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-建立-zk-连接"><span class="toc-text">2. 建立 zk 连接</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-发送消息"><span class="toc-text">3. 发送消息</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#connectionManager-状态机"><span class="toc-text">connectionManager 状态机</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#存在缺陷"><span class="toc-text">存在缺陷</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#session-过期无法重连"><span class="toc-text">session 过期无法重连</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#造成原因"><span class="toc-text">造成原因</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#解决方案"><span class="toc-text">解决方案</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#zk-重启无法重连"><span class="toc-text">zk 重启无法重连</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#造成原因-1"><span class="toc-text">造成原因</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#解决方案-1"><span class="toc-text">解决方案</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#相关链接"><span class="toc-text">相关链接</span></a></li></ol>
+  </div>
+
+
+
+<div class="content content-post CENTER">
+   <article id="post-node-zookeeper-client 运行机制" class="article article-type-post" itemprop="blogPost">
+  <header class="article-header">
+    <h1 class="post-title">node-zookeeper-client 运行机制</h1>
+
+    <div class="article-meta">
+      <span>
+        <i class="icon-calendar"></i>
+        <span>2019.06.22</span>
+      </span>
+
+      
+        <span class="article-author">
+          <i class="icon-user"></i>
+          <span>xiedacon</span>
+        </span>
+      
+
+      
+
+
+      
+
+      
+      <i class="fa fa-eye"></i> 
+        <span id="busuanzi_container_page_pv">
+           &nbsp热度 <span id="busuanzi_value_page_pv">
+           <i class="fa fa-spinner fa-spin"></i></span>℃
+        </span>
+      
+      
+    </div>
+  </header>
+
+  <div class="article-content">
+    
+      <p>ZooKeeper ( 简称 zk ) 是一个开源的分布式协调服务，其常用做分布式服务的注册中心</p>
+<p>本文要讲的是 Node.js 的 zk sdk – node-zookeeper-client</p>
+<p>在这之前，先了解一下 zk 相关的基本知识</p>
+<ul>
+<li>sessionId：客户端连接 session，默认 30s 后过期</li>
+<li>xid：客户端发送消息序号，zk 服务端进行响应时，xid 相同</li>
+<li>zxid：<code>ZooKeeper Transaction Id</code>，用于保证 zk 分布式一致性</li>
+<li>Jute：zk 底层的序列化工具</li>
+<li>packet：由 header 和 payload 组成，序列化后 buffer 结构类似 <code>[总长度, header, payload]</code></li>
+</ul>
+<h1 id="使用示例"><a href="#使用示例" class="headerlink" title="使用示例"></a>使用示例</h1><p>先从使用示例开始</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * xiedacon created at 2019-06-14 10:07:46</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Copyright (c) 2019 Souche.com, all rights reserved.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">'use strict'</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> ZK = <span class="built_in">require</span>(<span class="string">'node-zookeeper-client'</span>);</span><br><span class="line"><span class="keyword">const</span> util = <span class="built_in">require</span>(<span class="string">'util'</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> client = ZK.createClient(<span class="string">'127.0.0.1:2181'</span>);</span><br><span class="line"></span><br><span class="line">client.getChildren = util.promisify(client.getChildren);</span><br><span class="line"></span><br><span class="line">(<span class="keyword">async</span> () =&gt; &#123;</span><br><span class="line">  <span class="built_in">console</span>.log(<span class="string">'Result:'</span>, <span class="keyword">await</span> client.getChildren(<span class="string">'/xxx'</span>));</span><br><span class="line">&#125;)().catch(<span class="function">(<span class="params">err</span>) =&gt;</span> &#123;</span><br><span class="line">  <span class="built_in">console</span>.log(err);</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">client.connect();</span><br></pre></td></tr></table></figure>
+
+<p>上面的代码总共分成 3 步：</p>
+<ol>
+<li>调用 <code>ZK.createClient(&#39;127.0.0.1:2181&#39;)</code>，创建 zk 客户端实例</li>
+<li>调用 <code>client.connect()</code>，与 zk 服务端建立连接</li>
+<li>调用 <code>client.getChildren(&#39;/xxx&#39;)</code>，获取 /xxx 节点下的所有子节点</li>
+</ol>
+<h2 id="1-创建-zk-客户端"><a href="#1-创建-zk-客户端" class="headerlink" title="1. 创建 zk 客户端"></a>1. 创建 zk 客户端</h2><p>zk 客户端可大致分为三块：</p>
+<ul>
+<li>client：作为暴露 API 的一层 adapt，主要用于组装 request，对应文件 <code>index.js</code></li>
+<li>connectionManager：管理客户端与服务端的 socket 连接，以及相关事件，对应文件 <code>lib/connectionManager.js</code></li>
+<li>watcherManager：管理客户端的 watches，对应文件 <code>lib/watcherManager.js</code></li>
+</ul>
+<h2 id="2-建立-zk-连接"><a href="#2-建立-zk-连接" class="headerlink" title="2. 建立 zk 连接"></a>2. 建立 zk 连接</h2><ol>
+<li>调用 <code>client.connect()</code>，connect 方法内调用 <code>connectionManager.connect()</code>，将 connectionManager 状态置为 <strong>CONNECTING</strong></li>
+<li>通过 <code>findNextServer()</code> 获取一个 zk 服务器地址</li>
+<li>为 socket 绑定 <code>connect</code>、<code>data</code>、<code>drain</code>、<code>close</code>、<code>error</code> 事件</li>
+<li>如果 tcp 连接建立成功，则触发 connect 事件，并执行 <code>onSocketConnected</code> 方法<ul>
+<li>清除连接超时定时器</li>
+<li>生成 ConnectRequest 并写入 socket</li>
+<li>如果存在 auth info 则生成 AuthPacket 并放入 packetQueue</li>
+<li>如果存在 watches 则生成 SetWatches 并放入 packetQueue</li>
+</ul>
+</li>
+<li>如果 tcp 连接建立失败，则分别触发 <code>error</code>、<code>close</code> 事件，并执行 <code>onSocketError</code>、<code>onSocketClosed</code> 方法<ul>
+<li>清除连接超时定时器</li>
+<li>清除 pendingQueue 内的等待包</li>
+<li>根据 connectionManager 状态决定是否重连</li>
+<li>将 connectionManager 状态置为 <strong>DISCONNECTED</strong></li>
+<li>重连则重新执行 1，不重连则将 connectionManager 状态置为 <strong>CLOSED</strong></li>
+</ul>
+</li>
+<li>如果 zk 服务器允许 client 接入<ul>
+<li>触发 data 事件并执行 <code>onSocketData</code> 方法，此时 connectionManager 状态为 <strong>CONNECTING</strong></li>
+<li>构造 ConnectResponse 并解析 socket 数据</li>
+<li>如果 <code>connectResponse.timeOut &lt;= 0</code> 意味着当前 client 的 session 过期：将 connectionManager 状态置为 <strong>SESSION_EXPIRED</strong>，稍后 zk 服务器将自动关闭 socket，即触发 5</li>
+<li>其他情况意味着连接建立成功：设置相关数据并将 connectionManager 状态置为 <strong>CONNECTED</strong>，主动触发 socket <code>drain</code>，发送阻塞 request，使数据流动起来</li>
+</ul>
+</li>
+<li>如果 zk 服务器拒绝 client 接入<ul>
+<li>zk 服务器不会返回任何信息，直接关闭 socket，即触发 5</li>
+</ul>
+</li>
+</ol>
+<p>PS：其实并没有触发 socket <code>drain</code> 的代码，而是调用的 <code>onPacketQueueReadable</code> 方法，但它们的效果一样</p>
+<p><img src="/images/node-zookeeper-client%20%E8%BF%90%E8%A1%8C%E6%9C%BA%E5%88%B6/1.png" alt></p>
+<h2 id="3-发送消息"><a href="#3-发送消息" class="headerlink" title="3. 发送消息"></a>3. 发送消息</h2><ol>
+<li>调用 <code>client.getChildren(&#39;/xxx&#39;)</code></li>
+<li>client 生成对应的 request 结构体，并调用 <code>connectionManager.queue</code> ，将 request 放入 packetQueue 中，同时触发 socket <code>drain</code> </li>
+<li>在 <code>onPacketQueueReadable</code> 方法中，对于非 Auth、Ping 等的外部 request，设置 xid</li>
+<li>将 request 序列化并写入 socket，同时 request 放入 pendingQueue</li>
+<li>当 zk 服务端处理完成后，会返回处理结果，触发 <code>data</code> 事件，此时 connectionManager 状态为 <strong>CONECTED</strong></li>
+<li>构造 ReplyHeader 并解析 socket 数据</li>
+<li>如果 xid 为内部 xid 则进行内部处理，否则对比 pendingQueue 队头 request 的 xid 与当前 xid 是否一致<ul>
+<li>如果一致，则构造相应 Response 并执行 <code>client.getChildren</code> 的回调方法</li>
+<li>如果不一致，意味着客户端出现可不预知错误，直接关闭 socket 连接</li>
+</ul>
+</li>
+</ol>
+<p>PS：其实并没有触发 socket <code>drain</code> 的代码，而是触发 packetQueue 的 <code>readable</code> 事件，但它们的效果一样</p>
+<h1 id="connectionManager-状态机"><a href="#connectionManager-状态机" class="headerlink" title="connectionManager 状态机"></a>connectionManager 状态机</h1><p><img src="/images/node-zookeeper-client%20%E8%BF%90%E8%A1%8C%E6%9C%BA%E5%88%B6/2.png" alt></p>
+<ul>
+<li>CONNECTING：zk 连接建立中</li>
+<li>CONNECTED：zk 连接已建立完成</li>
+<li>DISCONNECTED：zk 连接已断开</li>
+<li>CLOSED：zk 客户端已关闭</li>
+<li>CLOSING：zk 客户端关闭中</li>
+<li>SESSION_EXPIRED：zk 客户端 session 过期，客户端无法处理，最终会导致客户端关闭</li>
+<li>AUTHENTICATION_FAILED：zk 客户端 auth 认证失败，客户端无法处理，最终会导致客户端关闭</li>
+</ul>
+<p>各方法与状态机的关系如下：</p>
+<p><img src="/images/node-zookeeper-client%20%E8%BF%90%E8%A1%8C%E6%9C%BA%E5%88%B6/3.png" alt></p>
+<h1 id="存在缺陷"><a href="#存在缺陷" class="headerlink" title="存在缺陷"></a>存在缺陷</h1><h2 id="session-过期无法重连"><a href="#session-过期无法重连" class="headerlink" title="session 过期无法重连"></a>session 过期无法重连</h2><h3 id="造成原因"><a href="#造成原因" class="headerlink" title="造成原因"></a>造成原因</h3><p>node-zookeeper-client 本身提供断线重连的能力</p>
+<p>对于长期断线 ( 30s 以上 )，连接重新建立后，当前客户端的 session 已经过期，connectionManager 将进入 <strong>SESSION_EXPIRED</strong> 状态，此时调用 <code>queue</code> 方法会抛出 <code>SESSION_EXPIRED</code> 错误</p>
+<p>这一问题在 <a href="https://wiki.apache.org/hadoop/ZooKeeper/FAQ#A3" target="_blank" rel="noopener">zookeeper 文档</a> 中也有提到：</p>
+<blockquote>
+<p>It means that the client was partitioned off from the ZooKeeper service for more the the session timeout and ZooKeeper decided that the client died.</p>
+</blockquote>
+<p>当客户端收到 <code>SESSION_EXPIRED</code> 错误时，那意味着当前客户端已经从 ZooKeeper 服务中断开，即 sesssion 过期，ZooKeeper 判定当前客户端应当关闭。</p>
+<blockquote>
+<p>If the client is only reading state from ZooKeeper, recovery means just reconnecting. In more complex applications, recovery means recreating ephemeral nodes, vying for leadership roles, and reconstructing published state.</p>
+</blockquote>
+<p>如果客户端以只读方式连接的 ZooKeeper，那么只需要重新连接就好了。但在更复杂的情况下，重连就意味着重新创建临时节点，参与 leader 竞争，重建已发布的状态。</p>
+<p>因此 node-zookeeper-client 的做法也合情合理，当 session 过期时直接禁止发送，由调用程序决定是否重连，重连后需要做什么操作</p>
+<p>但在大多数情况下，node-zookeeper-client 只会作为一个简单的客户端连接 zookeeper 服务，不会参与 zk 选举，因此，它最多需要做的事情也只是恢复临时节点</p>
+<h3 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h3><p>目前的方案是 session 过期自动重连，重连成功后将会进入 <strong>CONNECTED</strong> 状态并触发 <code>connect</code> 事件，在事件内重新注册临时节点</p>
+<ol>
+<li>发现 session 过期时，直接重置 sessionId，下次重连时将会重新获取 sessionId</li>
+<li>socket 关闭时，将 pendingQueue 内的包，移到 packetQueue 队头，避免丢包</li>
+<li>内部包直接从 socket 发送不走 packetQueue，避免阻塞，如 AuthPacket、SetWatches、Ping</li>
+</ol>
+<h2 id="zk-重启无法重连"><a href="#zk-重启无法重连" class="headerlink" title="zk 重启无法重连"></a>zk 重启无法重连</h2><h3 id="造成原因-1"><a href="#造成原因-1" class="headerlink" title="造成原因"></a>造成原因</h3><p>在 zk 集群中，不同服务节点之间通过 <a href="https://zhuanlan.zhihu.com/p/27335748" target="_blank" rel="noopener">ZAB 协议</a>，保证分布式一致性。zxid ( ZooKeeper Transaction Id ) 就是用于保证分布式一致性的标识符</p>
+<p>zk 直接挂掉或者手动重启都将会导致集群 zxid 重置。当客户端重连时，由于客户端本身存储的 xzid 大于 zk 集群 xzid，此时，zk 集群将拒绝客户端连接。外部表现为 connectionManager 疯狂执行 connect 操作，所有调用阻塞，zk 日志输出 <code>Refusing session request for client /192.168.0.1:33400 as it has seen zxid 0x300000012 our last zxid is 0x0 client must try another server</code></p>
+<p>虽然 zk 集群判断出 zxid 有误，但直接断开连接的处理方式确实是有待考量。因为通过这种方式处理，客户端完全不知道发生了什么，只能通过重连来解决，然而重连又连接不上，这就形成了一个死循环</p>
+<h3 id="解决方案-1"><a href="#解决方案-1" class="headerlink" title="解决方案"></a>解决方案</h3><p>由于客户端无需在意 zk 集群版本，因此，可以在每次连接时，直接重置 zxid 即可</p>
+<h1 id="相关链接"><a href="#相关链接" class="headerlink" title="相关链接"></a>相关链接</h1><ul>
+<li><a href="https://github.com/alexguan/node-zookeeper-client" target="_blank" rel="noopener">https://github.com/alexguan/node-zookeeper-client</a></li>
+<li><a href="https://github.com/apache/zookeeper/tree/master" target="_blank" rel="noopener">https://github.com/apache/zookeeper/tree/master</a></li>
+<li><a href="https://github.com/apache/zookeeper/blob/master/zookeeper-jute/src/main/resources/zookeeper.jute" target="_blank" rel="noopener">https://github.com/apache/zookeeper/blob/master/zookeeper-jute/src/main/resources/zookeeper.jute</a></li>
+<li><a href="https://www.cnblogs.com/leesf456/p/6091208.html" target="_blank" rel="noopener">https://www.cnblogs.com/leesf456/p/6091208.html</a></li>
+<li><a href="https://wiki.apache.org/hadoop/ZooKeeper/FAQ" target="_blank" rel="noopener">https://wiki.apache.org/hadoop/ZooKeeper/FAQ</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/27335748" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/27335748</a></li>
+<li><a href="https://www.cnblogs.com/luxiaoxun/p/4887452.html" target="_blank" rel="noopener">https://www.cnblogs.com/luxiaoxun/p/4887452.html</a></li>
+<li><a href="https://issues.apache.org/jira/browse/ZOOKEEPER-832" target="_blank" rel="noopener">https://issues.apache.org/jira/browse/ZOOKEEPER-832</a></li>
+</ul>
+
+    
+  </div>
+
+</article>
+
+
+   
+  <div class="box-prev-next clearfix">
+    <a class="show pull-left" href="/2017/08/30/从实现角度分析js原型链/">
+        <i class="icon icon-angle-left"></i>
+    </a>
+    <span>到底儿了哟～</span>
+    <a class="hide pull-right" href="/">
+        <i class="icon icon-angle-right"></i>
+    </a>
+  </div>
+
+
+
+
+</div>
+
+
+  <a id="backTop" class="back-top">
+    <i class="icon-angle-up"></i>
+  </a>
+
+
+
+
+  <div class="modal" id="modal">
+  <span id="cover" class="cover hide"></span>
+  <div id="modal-dialog" class="modal-dialog hide-dialog">
+    <div class="modal-header">
+      <span id="close" class="btn-close">关闭</span>
+    </div>
+    <hr>
+    <div class="modal-body">
+      <ul class="list-toolbox">
+        
+          <li class="item-toolbox">
+            <a
+              class="CIRCLE"
+              href="/archives/"
+              rel="noopener noreferrer"
+              target="_self"
+              >
+              博客
+            </a>
+          </li>
+        
+          <li class="item-toolbox">
+            <a
+              class="CIRCLE"
+              href="/tag/"
+              rel="noopener noreferrer"
+              target="_self"
+              >
+              标签
+            </a>
+          </li>
+        
+          <li class="item-toolbox">
+            <a
+              class="CIRCLE"
+              href="/about/"
+              rel="noopener noreferrer"
+              target="_self"
+              >
+              关于
+            </a>
+          </li>
+        
+      </ul>
+
+    </div>
+  </div>
+</div>
+
+
+
+  
+      <div class="fexo-comments comments-post">
+    
+
+    
+
+    
+    
+
+    
+
+    
+    
+
+    
+
+  </div>
+
+  
+
+  <script type="text/javascript">
+  function loadScript(url, callback) {
+    var script = document.createElement('script')
+    script.type = 'text/javascript';
+
+    if (script.readyState) { //IE
+      script.onreadystatechange = function() {
+        if (script.readyState == 'loaded' ||
+          script.readyState == 'complete') {
+          script.onreadystatechange = null;
+          callback();
+        }
+      };
+    } else { //Others
+      script.onload = function() {
+        callback();
+      };
+    }
+
+    script.src = url;
+    document.getElementsByTagName('head')[0].appendChild(script);
+  }
+
+  window.onload = function() {
+    loadScript('/js/bundle.js?235683', function() {
+      // load success
+    });
+  }
+</script>
+
+</body>
+</html>
