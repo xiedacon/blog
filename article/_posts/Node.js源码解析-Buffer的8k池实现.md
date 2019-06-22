@@ -23,7 +23,7 @@ tags: Node.js源码解析
 
 unsafe 的问题放到后面说，先看看如何获取一个 Buffer 实例
 
-![创建 Buffer](http://upload-images.jianshu.io/upload_images/2395997-4d09045ce5d5807f.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+![创建 Buffer](/images/Node.js源码解析-Buffer的8k池实现/1.png)
 
 从图中可以看出，只有 ``allocate()`` 和 ``fromString()`` 两个函数直接与8k池相关
 

@@ -20,11 +20,11 @@ tags: js
 
 创建一个函数时，会创建两个对象：函数本身和它的原型对象
 
-![第一步](http://upload-images.jianshu.io/upload_images/2395997-92d14a46b28b1172.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+![第一步](/images/从实现角度分析js原型链/1.png)
 
 所以我们可以先画个这样的关系图：
 
-![示例1](http://upload-images.jianshu.io/upload_images/2395997-63c51ccfd115d06c.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+![示例1](/images/从实现角度分析js原型链/2.png)
 
 > ps: 圆形代表函数，矩形代表对象
 
@@ -32,61 +32,61 @@ tags: js
 
 通过函数创建的对象，其原型是函数的原型对象
 
-![第二步](http://upload-images.jianshu.io/upload_images/2395997-4d698c04cb6fca06.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+![第二步](/images/从实现角度分析js原型链/3.png)
 
 再修改下关系图：
 
-![示例2](http://upload-images.jianshu.io/upload_images/2395997-656bafd57a409ecd.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+![示例2](/images/从实现角度分析js原型链/4.png)
 
 ### 第三步
 
 函数的原型对象的原型是 Object 的原型对象
 
-![第三步](http://upload-images.jianshu.io/upload_images/2395997-b36e079999f66cc8.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+![第三步](/images/从实现角度分析js原型链/5.png)
 
 再修改下关系图：
 
-![示例3](http://upload-images.jianshu.io/upload_images/2395997-92dc447a25936439.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+![示例3](/images/从实现角度分析js原型链/6.png)
 
 ### 第四步
 
 js的内置函数对象也满足这个规律
 
-![第四步](http://upload-images.jianshu.io/upload_images/2395997-0dce0597870e3a14.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+![第四步](/images/从实现角度分析js原型链/7.png)
 
 再修改下关系图：
 
-![示例4](http://upload-images.jianshu.io/upload_images/2395997-fe5a7d3f084db4aa.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+![示例4](/images/从实现角度分析js原型链/8.png)
 
 ### 第五步
 
 Function 的原型对象是一个函数
 
-![第五步](http://upload-images.jianshu.io/upload_images/2395997-24c24a9311003eb2.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+![第五步](/images/从实现角度分析js原型链/9.png)
 
 再修改下关系图：
 
-![示例5](http://upload-images.jianshu.io/upload_images/2395997-5ab3b9d42967f14f.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+![示例5](/images/从实现角度分析js原型链/10.png)
 
 ### 第六步
 
 所有函数的原型都相同，都为 Function 的原型对象
 
-![第六步](http://upload-images.jianshu.io/upload_images/2395997-e7e39bcfb0c0c04d.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+![第六步](/images/从实现角度分析js原型链/11.png)
 
 再修改下关系图：
 
-![示例6](http://upload-images.jianshu.io/upload_images/2395997-71ebe44042767ef4.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+![示例6](/images/从实现角度分析js原型链/12.png)
 
 ### 第七步
 
 Object 的原型对象的原型是 null 意为不应该存在
 
-![第七步](http://upload-images.jianshu.io/upload_images/2395997-f32d7b4b32e14ff2.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+![第七步](/images/从实现角度分析js原型链/13.png)
 
 最后得到如下关系图：
 
-![关系图](http://upload-images.jianshu.io/upload_images/2395997-60c26f950a32003b.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+![关系图](/images/从实现角度分析js原型链/14.png)
 
 ## 一些疑问
 
@@ -130,7 +130,7 @@ Function.__proto__ === Function.prototype
 
 对于这个，可以先把上面的关系图变形一下：
 
-![变形](http://upload-images.jianshu.io/upload_images/2395997-55f4dc77fa68206a.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+![变形](/images/从实现角度分析js原型链/15.png)
 
 可以看出：
   1. 所有函数都有与之对应的原型对象
@@ -141,7 +141,7 @@ Function.__proto__ === Function.prototype
 
 至于 ``Function.prototype`` 为什么是函数，可以先看看下面这个例子：
 
-![例子](http://upload-images.jianshu.io/upload_images/2395997-76230c482f59211c.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+![例子](/images/从实现角度分析js原型链/16.png)
 
 可以看出，``Array.prototype`` 是 Array 类型，``Map.prototype`` 是 Map 类型，``Set.prototsype`` 是 Set 类型
 
